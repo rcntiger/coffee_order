@@ -274,6 +274,32 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 .arc-brand-head .arc-icon{ font-size:1.1rem; }
 .arc-brand-total{ font-size:.78rem; opacity:.85; margin-left:auto; font-variant-numeric:tabular-nums; }
 .arc-empty{ text-align:center; color:var(--sub); font-size:.82rem; padding:14px 0; }
+/* ── 주문 수정 모달 ── */
+.edit-field-label{font-size:.78rem;font-weight:700;color:var(--sub);margin:10px 0 5px;display:block;}
+.edit-field-label:first-of-type{margin-top:0;}
+.edit-seg{display:flex;gap:6px;margin-bottom:2px;}
+.edit-seg button{
+  flex:1;padding:9px 0;font-size:.88rem;font-weight:700;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.edit-seg button.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+.edit-seg button.on.ice{background:#2D7FD3;border-color:#2D7FD3;}
+.edit-seg button.on.hot{background:#D6453A;border-color:#D6453A;}
+.btn-edit-save{
+  width:100%;padding:13px 0;border:none;border-radius:12px;
+  background:var(--primary);color:#fff;font-size:.95rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-top:14px;
+}
+.btn-edit-cancel{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:12px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;margin-top:8px;
+}
+.order-item .edit-btn{
+  flex:none;border:none;background:none;color:#A8A29E;font-size:.85rem;
+  cursor:pointer;padding:4px 4px 4px 2px;line-height:1;
+}
+.order-item .edit-btn:active{color:var(--primary);}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -855,6 +881,41 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   </div>
 </div>
 
+<!-- 주문 수정 모달 -->
+<div class="modal-bg" id="modalEditOrder">
+  <div class="modal-sheet">
+    <div class="admin-header">
+      <h2>✏️ 주문 수정</h2>
+      <button class="btn-admin-close" id="btnEditClose">✕</button>
+    </div>
+    <span class="edit-field-label">이름</span>
+    <input type="text" id="editName" maxlength="10" autocomplete="off">
+
+    <span class="edit-field-label">카테고리</span>
+    <div class="cat-scroll" id="editCatScroll"></div>
+
+    <span class="edit-field-label">메뉴</span>
+    <select id="editMenu"></select>
+
+    <span class="edit-field-label">온도</span>
+    <div class="edit-seg" id="editTempSeg">
+      <button type="button" data-et="ICE">ICE</button>
+      <button type="button" data-et="HOT">HOT</button>
+    </div>
+
+    <div class="opt-row" style="margin-top:12px;">
+      <span class="opt-label">샷 추가 <span class="opt-price" id="editShotLabel"></span></span>
+      <label class="toggle"><input type="checkbox" id="editShot"><span class="knob"></span></label>
+    </div>
+
+    <span class="edit-field-label">요청사항</span>
+    <input type="text" id="editMemo" maxlength="20" placeholder="예: 연하게, 얼음 적게" autocomplete="off">
+
+    <button class="btn-edit-save" id="btnEditSave">✅ 수정 저장</button>
+    <button class="btn-edit-cancel" id="btnEditCancel">취소</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1257,10 +1318,11 @@ function renderOrders(){
     orders.forEach(o=>{
       const div=document.createElement('div'); div.className='order-item';
       const opts=[o.shot?'샷추가':null,o.memo||null].filter(Boolean);
-      div.innerHTML='<div class="who"></div><div class="what"><div class="menu-name"><span class="temp-chip '+o.temp+'">'+o.temp+'</span><span class="mn"></span></div>'+(opts.length?'<div class="menu-opt"></div>':'')+'</div><div class="price">'+won(o.price)+'</div><button class="del" aria-label="삭제">✕</button>';
+      div.innerHTML='<div class="who"></div><div class="what"><div class="menu-name"><span class="temp-chip '+o.temp+'">'+o.temp+'</span><span class="mn"></span></div>'+(opts.length?'<div class="menu-opt"></div>':'')+'</div><div class="price">'+won(o.price)+'</div><button class="edit-btn" aria-label="수정">✏️</button><button class="del" aria-label="삭제">✕</button>';
       div.querySelector('.who').textContent=o.name;
       div.querySelector('.mn').textContent=o.menu;
       if(opts.length) div.querySelector('.menu-opt').textContent=opts.join(' · ');
+      div.querySelector('.edit-btn').addEventListener('click',()=>{ openEditModal(o); });
       div.querySelector('.del').addEventListener('click',async()=>{
         if(!confirm(o.name+'님의 주문을 삭제할까요?')) return;
         try{ await deleteOrder(o.id); await fetchOrders(); }catch(e){ toast('삭제 실패: '+e.message); }
@@ -1278,6 +1340,165 @@ function renderOrders(){
   $('btnOpenAllReceipt').style.display = lockedBrands.length >= 2 ? '' : 'none';
 }
 
+
+/* ═══════════════════════════════════════
+   주문 수정
+═══════════════════════════════════════ */
+let editingOrder = null;
+let editTemp = 'ICE';
+
+function openEditModal(o){
+  editingOrder = o;
+  editTemp = o.temp;
+
+  // 이름
+  $('editName').value = o.name;
+
+  // 샷 추가 가격 표시
+  $('editShotLabel').textContent = '(+'+BRANDS[o.brand||brand].shotPrice.toLocaleString()+'원)';
+
+  // 카테고리 탭 렌더링
+  renderEditCats(o.brand||brand);
+
+  // 메뉴 셀렉트
+  renderEditMenu(o.brand||brand, o.menu);
+
+  // 온도
+  setEditTemp(o.temp);
+
+  // 샷
+  $('editShot').checked = o.shot || false;
+
+  // 요청사항
+  $('editMemo').value = o.memo || '';
+
+  $('modalEditOrder').classList.add('show');
+}
+
+function closeEditModal(){
+  editingOrder = null;
+  $('modalEditOrder').classList.remove('show');
+}
+
+let editCurCat = '전체';
+function renderEditCats(b){
+  editCurCat = '전체';
+  const scroll = $('editCatScroll');
+  scroll.innerHTML = '';
+  BRANDS[b].cats.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (c===editCurCat?' active':'');
+    btn.textContent = c;
+    btn.addEventListener('click',()=>{
+      editCurCat = c;
+      scroll.querySelectorAll('.cat-btn').forEach(x=>x.classList.toggle('active',x.textContent===c));
+      renderEditMenu(b, null);
+    });
+    scroll.appendChild(btn);
+  });
+}
+
+function renderEditMenu(b, currentMenu){
+  const menus = BRANDS[b].menus;
+  const filtered = editCurCat==='전체' ? menus : menus.filter(m=>m.cat===editCurCat);
+  const sel = $('editMenu');
+  sel.innerHTML = '';
+  let found = false;
+  filtered.forEach(m=>{
+    const ri = menus.indexOf(m);
+    const prices = [];
+    if(m.hot!=null) prices.push('HOT '+m.hot.toLocaleString());
+    if(m.ice!=null) prices.push('ICE '+m.ice.toLocaleString());
+    const opt = document.createElement('option');
+    const minPrice = Math.min(...[m.hot,m.ice].filter(p=>p!=null));
+    const overLimit = maxPricePerOrder>0 && minPrice>maxPricePerOrder;
+    opt.value = ri;
+    opt.textContent = (overLimit?'🚫 ':'')+m.name+' · '+prices.join(' / ')+(overLimit?' (한도초과)':'');
+    if(overLimit) opt.disabled = true;
+    if(currentMenu && m.name===currentMenu){ opt.selected=true; found=true; }
+    sel.appendChild(opt);
+  });
+  // 전체 탭에서 못 찾으면 이름 직접 표시
+  if(currentMenu && !found){
+    const opt = document.createElement('option');
+    opt.value = '__current__'; opt.textContent = currentMenu+' (현재)'; opt.selected = true;
+    sel.insertBefore(opt, sel.firstChild);
+  }
+  const optC = document.createElement('option'); optC.value=CUSTOM; optC.textContent='➕ 직접 입력';
+  sel.appendChild(optC);
+}
+
+function setEditTemp(t){
+  editTemp = t;
+  document.querySelectorAll('#editTempSeg button').forEach(b=>{
+    const on = b.dataset.et===t;
+    b.classList.toggle('on',on);
+    b.classList.toggle('ice',on&&t==='ICE');
+    b.classList.toggle('hot',on&&t==='HOT');
+  });
+}
+
+document.querySelectorAll('#editTempSeg button').forEach(b=>{
+  b.addEventListener('click',()=>setEditTemp(b.dataset.et));
+});
+
+$('btnEditClose').addEventListener('click', closeEditModal);
+$('btnEditCancel').addEventListener('click', closeEditModal);
+$('modalEditOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeEditModal(); });
+
+$('btnEditSave').addEventListener('click', async ()=>{
+  if(!editingOrder) return;
+  const btn = $('btnEditSave');
+  btn.disabled=true; btn.textContent='저장 중...';
+
+  const name = $('editName').value.trim();
+  if(!name){ toast('이름을 입력해주세요'); btn.disabled=false; btn.textContent='✅ 수정 저장'; return; }
+
+  const selVal = $('editMenu').value;
+  let menuName, basePrice;
+  const b = editingOrder.brand || brand;
+
+  if(selVal===CUSTOM){
+    toast('직접 입력은 삭제 후 새로 추가해주세요');
+    btn.disabled=false; btn.textContent='✅ 수정 저장'; return;
+  } else if(selVal==='__current__'){
+    menuName = editingOrder.menu;
+    basePrice = editingOrder.price - (editingOrder.shot?BRANDS[b].shotPrice:0);
+  } else {
+    const m = BRANDS[b].menus[+selVal];
+    menuName = m.name;
+    basePrice = editTemp==='HOT' ? m.hot : m.ice;
+    if(basePrice==null){ toast('이 메뉴는 '+editTemp+' 옵션이 없습니다'); btn.disabled=false; btn.textContent='✅ 수정 저장'; return; }
+  }
+
+  const shot = $('editShot').checked;
+  const price = basePrice + (shot?BRANDS[b].shotPrice:0);
+
+  // 가격 한도 체크
+  if(maxPricePerOrder>0 && price>maxPricePerOrder){
+    toast('❌ '+price.toLocaleString()+'원 — 한도 초과 (최대 '+maxPricePerOrder.toLocaleString()+'원)');
+    btn.disabled=false; btn.textContent='✅ 수정 저장'; return;
+  }
+
+  try{
+    // 기존 삭제 후 새로 삽입 (Supabase UPDATE)
+    await sbFetch('coffee_orders?id=eq.'+editingOrder.id, {
+      method: 'PATCH',
+      headers: {'Prefer':'return=representation'},
+      body: JSON.stringify({
+        name, menu:menuName, temp:editTemp, shot,
+        memo:$('editMemo').value.trim(), price
+      })
+    });
+    await fetchOrders();
+    closeEditModal();
+    toast('✅ '+name+'님 주문이 수정되었습니다');
+  }catch(e){
+    toast('수정 실패: '+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='✅ 수정 저장';
+  }
+});
 /* ═══════════════════════════════════════
    주문 추가
 ═══════════════════════════════════════ */
@@ -1813,6 +2034,8 @@ $('btnReset').addEventListener('click',async()=>{
 $('btnNewSession').addEventListener('click',()=>{
   if(!confirm('새 세션을 시작하면 지금 화면이 초기화됩니다.\n(기존 데이터는 DB에 남아있습니다)\n계속할까요?')) return;
   newSession();
+  // PIN 없이 바로 주문설정 열기
+  openOrderModal();
 });
 // 영수증
 $('btnOpenReceipt').addEventListener('click',openReceipt);
@@ -2062,8 +2285,9 @@ $('btnResetOrderSettings').addEventListener('click', async ()=>{
   updateCurrentHeadcountBox();
   maxPricePerOrder = 0; await savePriceLimit();
   $('inpPriceLimit').value = ''; tmpPriceLimit = 0;
-  closeOrderModal();
-  toast('🔄 주문설정이 전체 해제되었습니다');
+  // 모달 닫지 않고 가게선택 탭으로 이동 (가게선택 필수 안내)
+  switchOrderTab('store');
+  toast('🔄 전체 해제됨 — 가게를 다시 선택해주세요');
 });
 
 
