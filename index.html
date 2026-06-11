@@ -220,8 +220,6 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 }
 .price-inp:focus{border-color:var(--primary);}
 .price-inp.na{background:#F5F4F0;color:#C9C5BD;pointer-events:none;}
-.shot-inp-row{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:4px;}
-.shot-inp-row label{margin:0;font-size:.85rem;font-weight:700;color:var(--text);}
 
 /* 메뉴 추가 폼 */
 .add-menu-form{background:#F8F7F4;border-radius:12px;padding:14px;margin-bottom:14px;}
@@ -544,7 +542,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     </div>
   </section>
 
-  <p class="notice">※ Supabase 실시간 동기화 · 가격은 매장 상황에 따라 다를 수 있습니다.</p>
+  <p class="notice">※ 가격은 매장 상황에 따라 다를 수 있습니다.</p>
 </main>
 
 <div class="bottom-bar">
@@ -602,6 +600,13 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       </div>
     </div>
 
+    <!-- 현재설정 표시용 hidden 요소 -->
+    <div style="display:none;">
+      <div id="currentStoreBox"><span id="currentStoreIcon"></span><span id="currentStoreVal"></span></div>
+      <div id="currentDeadlineBox"><span id="currentDeadlineVal"></span></div>
+      <div id="currentHeadcountBox"><span id="currentHeadcountVal"></span></div>
+      <button id="btnUnlockStore"></button>
+    </div>
     <!-- 현재 설정 요약 -->
     <div id="orderSettingSummary" style="background:#F8F7F4;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.8;">
       <div style="font-weight:800;margin-bottom:4px;">현재 설정</div>
@@ -806,11 +811,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
           <button class="admin-tab" data-abrand="compose">컴포즈</button>
         </div>
       </div>
-      <div class="shot-inp-row">
-        <label for="inpShotPrice">샷 추가 가격</label>
-        <input type="number" class="price-inp" id="inpShotPrice" min="0" step="100">
-        <span style="font-size:.82rem;color:var(--sub);">원</span>
-      </div>
+
       <table class="price-table" id="priceTable">
         <thead><tr><th>메뉴</th><th style="text-align:right;">HOT</th><th style="text-align:right;">ICE</th></tr></thead>
         <tbody id="priceTableBody"></tbody>
@@ -818,189 +819,6 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="btn-save-prices" id="btnSavePrices">✅ 가격 저장</button>
       <div class="save-notice">저장하면 이 기기의 모든 메뉴 가격이 업데이트됩니다.</div>
     </div>
-  </div>
-</div>
-
-<!-- (구) 관리자 모달 placeholder (JS 호환용) -->
-<div id="modalAdmin" style="display:none;"></div>
-
-    <!-- 패널: 가격 수정 -->
-    <div class="admin-panel show" id="panelPrice">
-      <div style="margin-bottom:10px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
-        <div class="admin-tabs" id="adminBrandTabs" style="margin-bottom:0;">
-          <button class="admin-tab active" data-abrand="paik">빽다방</button>
-          <button class="admin-tab" data-abrand="mega">메가커피</button>
-          <button class="admin-tab" data-abrand="compose">컴포즈</button>
-        </div>
-      </div>
-      <div class="shot-inp-row">
-        <label for="inpShotPrice">샷 추가 가격</label>
-        <input type="number" class="price-inp" id="inpShotPrice" min="0" step="100">
-        <span style="font-size:.82rem;color:var(--sub);">원</span>
-      </div>
-      <table class="price-table" id="priceTable">
-        <thead><tr><th>메뉴</th><th style="text-align:right;">HOT</th><th style="text-align:right;">ICE</th></tr></thead>
-        <tbody id="priceTableBody"></tbody>
-      </table>
-      <button class="btn-save-prices" id="btnSavePrices">✅ 가격 저장</button>
-      <div class="save-notice">저장하면 이 기기의 모든 메뉴 가격이 업데이트됩니다.</div>
-    </div>
-
-    <!-- 패널: 메뉴 추가 -->
-    <div class="admin-panel" id="panelAdd">
-      <div class="add-menu-form">
-        <h3>새 메뉴 추가</h3>
-        <div class="form-row">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">브랜드</div>
-            <select class="inp-sm" id="addBrand">
-              <option value="paik">빽다방</option>
-              <option value="mega">메가커피</option>
-              <option value="compose">컴포즈</option>
-            </select>
-          </div>
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">카테고리</div>
-            <select class="inp-sm" id="addCat"></select>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">메뉴 이름</div>
-          <input type="text" class="inp-sm" id="addName" placeholder="예: 흑당버블라떼" maxlength="20">
-        </div>
-        <div class="form-row">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">HOT 가격 (없으면 빈칸)</div>
-            <input type="number" class="inp-sm" id="addHot" placeholder="예: 3500" min="0" step="100">
-          </div>
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">ICE 가격 (없으면 빈칸)</div>
-            <input type="number" class="inp-sm" id="addIce" placeholder="예: 3500" min="0" step="100">
-          </div>
-        </div>
-        <button class="btn-form-add" id="btnAddMenu">메뉴 추가</button>
-      </div>
-    </div>
-
-    <!-- 패널: 메뉴 삭제 -->
-    <div class="admin-panel" id="panelDel">
-      <div style="margin-bottom:10px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
-        <div class="admin-tabs" id="delBrandTabs" style="margin-bottom:0;">
-          <button class="admin-tab active" data-dbrand="paik">빽다방</button>
-          <button class="admin-tab" data-dbrand="mega">메가커피</button>
-          <button class="admin-tab" data-dbrand="compose">컴포즈</button>
-        </div>
-      </div>
-      <div id="delMenuList"></div>
-    </div>
-
-    <!-- 패널: 마감시간 -->
-    <div class="admin-panel" id="panelDeadline">
-      <!-- 현재 설정된 마감시간 -->
-      <div class="current-deadline" id="currentDeadlineBox">
-        <div class="cd-label">현재 마감시간</div>
-        <div class="cd-val" id="currentDeadlineVal">-</div>
-      </div>
-
-      <div class="time-setting-box">
-        <h3>⏰ 주문 마감시간 설정</h3>
-        <!-- 빠른 설정 -->
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 설정</div>
-        <div class="preset-btns" id="presetBtns">
-          <button class="preset-btn" data-min="10">+10분</button>
-          <button class="preset-btn" data-min="20">+20분</button>
-          <button class="preset-btn" data-min="30">+30분</button>
-          <button class="preset-btn" data-min="60">+1시간</button>
-        </div>
-        <!-- 직접 입력 -->
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">시간 직접 입력</div>
-        <div class="time-row">
-          <label>마감 시각</label>
-          <input type="time" class="time-inp" id="inpDeadlineTime">
-        </div>
-        <button class="btn-set-deadline" id="btnSetDeadline">⏰ 마감시간 설정</button>
-        <button class="btn-clear-deadline" id="btnClearDeadline">마감시간 해제</button>
-      </div>
-      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
-        마감시간이 설정되면 앱 상단에 카운트다운이 표시됩니다.<br>
-        5분 이하 남으면 빨간색으로 긴박하게 표시됩니다.
-      </div>
-    </div>
-
-    <!-- 패널: 인원설정 -->
-    <div class="admin-panel" id="panelHeadcount">
-      <!-- 현재 설정 -->
-      <div class="current-deadline" id="currentHeadcountBox">
-        <div class="cd-label">현재 설정 인원</div>
-        <div class="cd-val" id="currentHeadcountVal">-</div>
-      </div>
-
-      <div class="headcount-setting-box">
-        <h3>📋 총 주문 잔 수 설정</h3>
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
-        <div class="hc-quick-btns">
-          <button class="hc-quick-btn" data-hc="10">10잔</button>
-          <button class="hc-quick-btn" data-hc="20">20잔</button>
-          <button class="hc-quick-btn" data-hc="30">30잔</button>
-          <button class="hc-quick-btn" data-hc="40">40잔</button>
-          <button class="hc-quick-btn" data-hc="50">50잔</button>
-        </div>
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
-        <div class="hc-inp-row">
-          <input type="number" class="hc-inp" id="inpHeadcount" min="1" max="200" placeholder="예: 40">
-          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">잔</span>
-        </div>
-        <button class="btn-set-headcount" id="btnSetHeadcount">👥 인원 설정</button>
-        <button class="btn-clear-headcount" id="btnClearHeadcount">인원 설정 해제</button>
-      </div>
-      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
-        총 주문잔수를 설정하면 주문잔수 / 미주문잔 / 전체 현황이<br>앱 상단에 진행바로 표시됩니다.
-      </div>
-    </div>
-    <!-- 패널: 가게설정 -->
-    <div class="admin-panel" id="panelStore">
-      <!-- 현재 설정 -->
-      <div class="current-store-box" id="currentStoreBox">
-        <div class="cs-icon" id="currentStoreIcon">☕</div>
-        <div class="cs-info">
-          <div class="cs-label">현재 선택된 가게</div>
-          <div class="cs-val" id="currentStoreVal">-</div>
-        </div>
-      </div>
-
-      <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:10px;">가게를 선택하면 브랜드 탭이 잠겨 일반 사용자가 변경할 수 없습니다.</div>
-
-      <div class="store-card" data-store="paik" id="storeCardPaik">
-        <div class="store-icon">🐔</div>
-        <div class="store-info">
-          <div class="store-name">빽다방</div>
-          <div class="store-desc">백종원의 빽다방 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-      <div class="store-card" data-store="mega" id="storeCardMega">
-        <div class="store-icon">☕</div>
-        <div class="store-info">
-          <div class="store-name">메가커피</div>
-          <div class="store-desc">메가MGC커피 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-      <div class="store-card" data-store="compose" id="storeCardCompose">
-        <div class="store-icon">🎵</div>
-        <div class="store-info">
-          <div class="store-name">컴포즈커피</div>
-          <div class="store-desc">컴포즈커피 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-
-      <button class="btn-set-store" id="btnSetStore">🏪 이 가게로 설정 (잠금)</button>
-      <button class="btn-unlock-store" id="btnUnlockStore">🔓 가게 잠금 해제</button>
-    </div>
-
   </div>
 </div>
 
@@ -1514,7 +1332,6 @@ async function addOrder(){
    관리자 — 가격 수정 패널
 ═══════════════════════════════════════ */
 function renderPriceTable(){
-  $('inpShotPrice').value=BRANDS[adminBrand].shotPrice;
   const tbody=$('priceTableBody'); tbody.innerHTML='';
   BRANDS[adminBrand].menus.forEach((m,i)=>{
     const tr=document.createElement('tr');
@@ -1532,9 +1349,6 @@ function renderPriceTable(){
   });
 }
 function savePrices(){
-  // 샷 추가 가격
-  const sp=parseInt($('inpShotPrice').value,10);
-  if(!isNaN(sp)&&sp>=0) BRANDS[adminBrand].shotPrice=sp;
   // 각 메뉴 가격
   document.querySelectorAll('#priceTableBody .price-inp:not([disabled])').forEach(inp=>{
     const idx=parseInt(inp.dataset.idx,10);
@@ -1671,18 +1485,6 @@ function closeOrderModal(){ $('modalOrder').classList.remove('show'); }
 function switchOrderTab(tab){
   
 /* ── 1인당 주문가격 한도 ── */
-const LS_PRICE_LIMIT_KEY = 'coffeePriceLimit_v1';
-
-function loadPriceLimit(){
-  maxPricePerOrder = parseInt(localStorage.getItem(LS_PRICE_LIMIT_KEY)||'0', 10);
-}
-function savePriceLimit(){
-  if(maxPricePerOrder > 0){
-    localStorage.setItem(LS_PRICE_LIMIT_KEY, maxPricePerOrder.toString());
-  } else {
-    localStorage.removeItem(LS_PRICE_LIMIT_KEY);
-  }
-}
 
 document.querySelectorAll('.price-limit-preset').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -1710,11 +1512,55 @@ document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle
   if(p) p.classList.add('show');
 }
 
+
+/* ── 메뉴수정 브랜드 탭 동적 렌더링 ── */
+function renderMenuBrandTabs(){
+  const activeBrands = lockedBrands.length > 0 ? lockedBrands : ['paik','mega','compose'];
+  const BNAMES = {paik:'빽다방', mega:'메가커피', compose:'컴포즈'};
+
+  // 가격수정 브랜드 탭
+  ['adminBrandTabs'].forEach(tabId=>{
+    const wrap = $(tabId);
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    activeBrands.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'admin-tab' + (i===0?' active':'');
+      btn.dataset.abrand = b;
+      btn.textContent = BNAMES[b];
+      btn.addEventListener('click',()=>{
+        adminBrand = b;
+        document.querySelectorAll('[data-abrand]').forEach(x=>x.classList.toggle('active',x.dataset.abrand===b));
+        renderPriceTable();
+      });
+      wrap.appendChild(btn);
+    });
+    adminBrand = activeBrands[0];
+  });
+
+  // 메뉴삭제 브랜드 탭
+  ['delBrandTabs'].forEach(tabId=>{
+    const wrap = $(tabId);
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    activeBrands.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'admin-tab' + (i===0?' active':'');
+      btn.dataset.dbrand = b;
+      btn.textContent = BNAMES[b];
+      btn.addEventListener('click',()=>{
+        delBrand = b;
+        document.querySelectorAll('[data-dbrand]').forEach(x=>x.classList.toggle('active',x.dataset.dbrand===b));
+        renderDelMenuList();
+      });
+      wrap.appendChild(btn);
+    });
+    delBrand = activeBrands[0];
+  });
+}
 /* ── 메뉴수정 모달 ── */
 function openMenuModal(){
-  adminBrand='paik'; delBrand='paik';
-  document.querySelectorAll('[data-abrand]').forEach(b=>b.classList.toggle('active',b.dataset.abrand==='paik'));
-  document.querySelectorAll('[data-dbrand]').forEach(b=>b.classList.toggle('active',b.dataset.dbrand==='paik'));
+  renderMenuBrandTabs();
   renderPriceTable();
   updateAddCatSelect();
   renderDelMenuList();
@@ -2103,17 +1949,30 @@ $('btnChangePinFromOrder').addEventListener('click',()=>{ closeOrderModal(); set
 $('modalOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeOrderModal(); });
 
 /* ── 1인당 주문가격 한도 ── */
-const LS_PRICE_LIMIT_KEY = 'coffeePriceLimit_v1';
-
-function loadPriceLimit(){
-  maxPricePerOrder = parseInt(localStorage.getItem(LS_PRICE_LIMIT_KEY)||'0', 10);
-}
-function savePriceLimit(){
-  if(maxPricePerOrder > 0){
-    localStorage.setItem(LS_PRICE_LIMIT_KEY, maxPricePerOrder.toString());
-  } else {
-    localStorage.removeItem(LS_PRICE_LIMIT_KEY);
+async function loadPriceLimit(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=price_limit`
+    );
+    maxPricePerOrder = rows[0]?.price_limit || 0;
+  }catch(e){
+    console.warn('[가격한도] DB 로드 실패:', e.message);
+    maxPricePerOrder = 0;
   }
+}
+async function savePriceLimit(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: '__global__',
+        brand: '__global__',
+        price_limit: maxPricePerOrder,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[가격한도] DB 저장 실패:', e.message); }
 }
 
 document.querySelectorAll('.price-limit-preset').forEach(btn=>{
@@ -2173,7 +2032,7 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
 
     // 가격 한도
     maxPricePerOrder = parseInt($('inpPriceLimit').value||'0', 10);
-    savePriceLimit();
+    await savePriceLimit();
 
     closeOrderModal();
     toast('✅ 주문설정이 저장되었습니다');
@@ -2201,7 +2060,7 @@ $('btnResetOrderSettings').addEventListener('click', async ()=>{
   updateCurrentDeadlineBox();
   await clearHeadcount();
   updateCurrentHeadcountBox();
-  maxPricePerOrder = 0; savePriceLimit();
+  maxPricePerOrder = 0; await savePriceLimit();
   $('inpPriceLimit').value = ''; tmpPriceLimit = 0;
   closeOrderModal();
   toast('🔄 주문설정이 전체 해제되었습니다');
@@ -2215,21 +2074,7 @@ $('btnChangePinFromMenu').addEventListener('click',()=>{ closeMenuModal(); setTi
 $('modalMenu').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeMenuModal(); });
 document.querySelectorAll('.admin-tab[data-mtab]').forEach(b=>b.addEventListener('click',()=>switchMenuTab(b.dataset.mtab)));
 // 관리자 브랜드 탭 (가격)
-document.querySelectorAll('[data-abrand]').forEach(b=>{
-  b.addEventListener('click',()=>{
-    adminBrand=b.dataset.abrand;
-    document.querySelectorAll('[data-abrand]').forEach(x=>x.classList.toggle('active',x.dataset.abrand===adminBrand));
-    renderPriceTable();
-  });
-});
-// 관리자 브랜드 탭 (삭제)
-document.querySelectorAll('[data-dbrand]').forEach(b=>{
-  b.addEventListener('click',()=>{
-    delBrand=b.dataset.dbrand;
-    document.querySelectorAll('[data-dbrand]').forEach(x=>x.classList.toggle('active',x.dataset.dbrand===delBrand));
-    renderDelMenuList();
-  });
-});
+// 브랜드 탭 이벤트는 renderMenuBrandTabs()에서 동적 등록
 $('btnSavePrices').addEventListener('click',savePrices);
 $('addBrand').addEventListener('change',updateAddCatSelect);
 $('btnAddMenu').addEventListener('click',addMenu);
@@ -2609,7 +2454,6 @@ $('btnClearDeadline').addEventListener('click',()=>{
 ═══════════════════════════════════════ */
 (async () => {
   loadSession();
-  loadPriceLimit();
   $('todayDate').textContent = todayStr();
   $('sessionLabel').textContent = sessionLabel();
   applyBrandTheme();
@@ -2622,6 +2466,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
     loadDeadline(),
     loadHeadcount(),
     loadStoreLock(),
+    loadPriceLimit(),
     fetchMenusFromDB(),
   ]);
 
