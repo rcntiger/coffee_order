@@ -137,6 +137,36 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   cursor:pointer;letter-spacing:-.01em;
 }
 .btn-add:disabled{opacity:.6;cursor:not-allowed;}
+.budget-bar{
+  background:var(--card);border:1.5px solid var(--line);
+  border-radius:14px;padding:12px 16px;margin:0 14px 14px;
+  display:none;
+}
+.budget-bar.show{display:block;}
+.budget-bar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.budget-bar-label{font-size:.78rem;font-weight:800;color:var(--text);}
+.budget-nums{display:flex;gap:14px;}
+.budget-num-box{text-align:center;}
+.budget-num{font-size:1.15rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.budget-num.remain{color:#16A34A;}
+.budget-num.remain.warn{color:#F59E0B;}
+.budget-num.remain.over{color:var(--danger);}
+.budget-num.used{color:var(--primary);}
+.budget-num.total{color:var(--sub);}
+.budget-num-label{font-size:.65rem;color:var(--sub);margin-top:2px;font-weight:600;}
+.budget-progress-bg{height:8px;background:#EBE8E1;border-radius:99px;overflow:hidden;}
+.budget-progress-fill{height:100%;border-radius:99px;transition:width .4s ease,background .3s;}
+.budget-status{font-size:.75rem;color:var(--sub);margin-top:6px;text-align:right;font-weight:600;}
+.budget-status.over{color:var(--danger);font-weight:800;}
+/* 주문폼 내 잔여예산 표시 */
+.budget-hint{
+  display:none;font-size:.78rem;font-weight:700;
+  padding:8px 12px;border-radius:8px;margin-top:8px;text-align:center;
+}
+.budget-hint.show{display:block;}
+.budget-hint.ok{background:#F0FDF4;color:#16A34A;}
+.budget-hint.warn{background:#FFFBEB;color:#D97706;}
+.budget-hint.over{background:#FEF2F2;color:var(--danger);}
 .setup-required-banner{
   display:none;background:#FFF7ED;border:1.5px solid #FED7AA;
   border-radius:12px;padding:13px 16px;margin-bottom:14px;
@@ -503,6 +533,31 @@ body.modal-open{overflow:hidden;}
     <div class="hc-status" id="hcStatus">주문을 기다리는 중...</div>
   </div>
 
+  <!-- 예산 현황 바 -->
+  <div class="budget-bar" id="budgetBar">
+    <div class="budget-bar-top">
+      <span class="budget-bar-label">💰 1인당 예산 현황</span>
+      <div class="budget-nums">
+        <div class="budget-num-box">
+          <div class="budget-num used" id="bdUsed">0</div>
+          <div class="budget-num-label">사용금액</div>
+        </div>
+        <div class="budget-num-box">
+          <div class="budget-num remain" id="bdRemain">0</div>
+          <div class="budget-num-label">잔여예산</div>
+        </div>
+        <div class="budget-num-box">
+          <div class="budget-num total" id="bdTotal">0</div>
+          <div class="budget-num-label">1인예산</div>
+        </div>
+      </div>
+    </div>
+    <div class="budget-progress-bg">
+      <div class="budget-progress-fill" id="bdProgressFill" style="width:0%;background:var(--primary);"></div>
+    </div>
+    <div class="budget-status" id="bdStatus">주문을 기다리는 중...</div>
+  </div>
+
   <div class="session-bar">
     <div>
       <div style="font-size:.72rem;color:#6366F1;margin-bottom:2px;">현재 주문 세션</div>
@@ -541,6 +596,7 @@ body.modal-open{overflow:hidden;}
     </div>
     <label for="inpMemo">요청사항 (선택)</label>
     <input type="text" id="inpMemo" placeholder="예: 연하게, 얼음 적게" maxlength="20" autocomplete="off">
+    <div class="budget-hint" id="budgetHint"></div>
     <button class="btn-add" id="btnAdd">주문 담기</button>
   </section>
 
@@ -616,6 +672,7 @@ body.modal-open{overflow:hidden;}
       <div id="summaryStore">🏪 가게: <span style="color:var(--sub);">설정 없음</span></div>
       <div id="summaryDeadline">⏰ 마감: <span style="color:var(--sub);">설정 없음</span></div>
       <div id="summaryHeadcount">📋 주문잔수: <span style="color:var(--sub);">설정 없음</span></div>
+      <div id="summaryBudget">💰 1인예산: <span style="color:var(--sub);">설정 없음</span></div>
     </div>
 
     <!-- 주문설정 탭 -->
@@ -623,6 +680,7 @@ body.modal-open{overflow:hidden;}
       <button class="admin-tab active" data-otab="store">🏪 가게선택</button>
       <button class="admin-tab" data-otab="deadline">⏰ 마감시간</button>
       <button class="admin-tab" data-otab="headcount">👥 주문잔수</button>
+      <button class="admin-tab" data-otab="budget">💰 예산</button>
     </div>
 
     <!-- 패널: 가게선택 (다중선택) -->
@@ -692,6 +750,26 @@ body.modal-open{overflow:hidden;}
           <span style="font-size:.9rem;font-weight:700;color:var(--sub);">잔</span>
         </div>
         <button class="btn-clear-headcount" id="btnClearHeadcount" style="margin-top:8px;">잔 수 설정 해제</button>
+      </div>
+    </div>
+
+    <!-- 패널: 예산 -->
+    <div class="admin-panel" id="opanelBudget">
+      <div class="headcount-setting-box">
+        <h3>💰 1인당 예산</h3>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
+        <div class="hc-quick-btns">
+          <button class="budget-quick-btn" data-budget="2000">2,000원</button>
+          <button class="budget-quick-btn" data-budget="3000">3,000원</button>
+          <button class="budget-quick-btn" data-budget="4000">4,000원</button>
+          <button class="budget-quick-btn" data-budget="5000">5,000원</button>
+        </div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
+        <div class="hc-inp-row">
+          <input type="number" class="hc-inp" id="inpBudget" min="0" max="100000" step="500" placeholder="예: 5000">
+          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">원</span>
+        </div>
+        <button class="btn-clear-headcount" id="btnClearBudget" style="margin-top:8px;">예산 설정 해제</button>
       </div>
     </div>
 
@@ -1097,11 +1175,25 @@ function loadSession(){
   }catch(e){ sessionId=todaySession(); }
 }
 function saveSession(){ localStorage.setItem(LS_SESSION_KEY,JSON.stringify({brand,sessionId})); }
-function newSession(){
+async function newSession(){
   const ts=Date.now().toString(36).toUpperCase();
   sessionId=todaySession()+'_'+ts; saveSession();
   $('sessionLabel').textContent=sessionId;
-  orders=[]; renderOrders(); fetchOrders(); toast('새 세션이 시작되었습니다');
+  orders=[]; renderOrders();
+
+  // 주문설정 초기화 (DB + 로컬 상태)
+  await Promise.all([
+    clearDeadlineData(),
+    clearHeadcount(),
+    clearBudget(),
+    clearStoreLock(),
+  ]);
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+  $('deadlineBar').classList.remove('show');
+  applySetupGuard();
+
+  await fetchOrders();
+  toast('새 세션이 시작되었습니다');
 }
 
 /* ═══════════════════════════════════════
@@ -1147,6 +1239,7 @@ function connectRealtime(){
         if(tbl.includes('session_settings')){
           loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else tickCountdown(); });
           loadHeadcount().then(()=> renderHeadcountBar());
+          loadBudget().then(()=>{ renderBudgetBar(); renderBudgetHint(getCurrentPrice()); });
           loadStoreLock().then(applySetupGuard);
         } else {
           fetchOrders();
@@ -1205,6 +1298,18 @@ function renderMenuSelect(){
   const optC=document.createElement('option'); optC.value=CUSTOM; optC.textContent='➕ 직접 입력 (다른 메뉴)';
   sel.appendChild(optC); onMenuChange();
 }
+function getCurrentPrice(){
+  const sv=$('selMenu').value;
+  if(sv===CUSTOM){
+    const v=parseInt($('inpCustomPrice').value.replace(/[^0-9]/g,''),10);
+    return isNaN(v)?0:v;
+  }
+  const m=BRANDS[brand].menus[+sv];
+  if(!m) return 0;
+  const base=curTemp==='HOT'?m.hot:m.ice;
+  const shot=$('chkShot').checked;
+  return (base||0)+(shot?BRANDS[brand].shotPrice:0);
+}
 function onMenuChange(){
   const isC=$('selMenu').value===CUSTOM;
   $('customFields').classList.toggle('show',isC);
@@ -1215,6 +1320,7 @@ function onMenuChange(){
       if(curTemp==='ICE'&&m.ice==null) setTemp('HOT');
     }
   }
+  renderBudgetHint(getCurrentPrice());
 }
 function setTemp(t){
   curTemp=t;
@@ -1249,6 +1355,8 @@ function renderOrders(){
   $('barCups').textContent=orders.length+'잔 · '+people+'명';
   $('barTotal').textContent=won(total);
   renderHeadcountBar();
+  renderBudgetBar();
+  renderBudgetHint(getCurrentPrice());
   // 가게 2개 이상 선택 시 통합주문서 버튼 표시
   $('btnOpenAllReceipt').style.display = lockedBrands.length >= 2 ? '' : 'none';
 }
@@ -1274,6 +1382,25 @@ async function addOrder(){
   }
   const shot=$('chkShot').checked;
   const price=basePrice+(shot?BRANDS[brand].shotPrice:0);
+
+  // ── 예산 초과 확인 ──
+  if(budgetPerPerson > 0){
+    const used = getMyUsed(name);
+    const remain = budgetPerPerson - used;
+    if(price > remain){
+      const msg = remain <= 0
+        ? `❌ "${name}"님의 잔여예산이 없습니다.
+(예산: ${budgetPerPerson.toLocaleString()}원 / 이미 ${used.toLocaleString()}원 사용)`
+        : `❌ 금액이 부족합니다.
+
+잔여예산: ${remain.toLocaleString()}원
+주문금액: ${price.toLocaleString()}원
+부족금액: ${(price-remain).toLocaleString()}원`;
+      toast(remain<=0 ? `❌ ${name}님 잔여예산 없음` : `❌ 예산 부족 (${(price-remain).toLocaleString()}원 초과)`);
+      alert(msg);
+      return;
+    }
+  }
 
   // ── 동명 선주문 확인 ──
   const prevOrders = allOrders.filter(o => o.name === name);
@@ -1419,6 +1546,8 @@ function initTempSettings(){
   }
   // 잔수 입력
   $('inpHeadcount').value = tmpHeadcount || '';
+  tmpBudget = budgetPerPerson;
+  $('inpBudget').value = budgetPerPerson || '';
   updateOrderSummary();
 }
 
@@ -1441,6 +1570,8 @@ function updateOrderSummary(){
   // 잔수
   const hcVal = parseInt($('inpHeadcount').value||'0',10);
   $('summaryHeadcount').innerHTML = '📋 주문잔수: <span style="color:'+(hcVal?'var(--primary)':'var(--sub)')+';">'+(hcVal?hcVal+'잔':'설정 없음')+'</span>';
+  const bdVal2 = parseInt($('inpBudget').value||'0',10);
+  $('summaryBudget').innerHTML = '💰 1인예산: <span style="color:'+(bdVal2?'var(--primary)':'var(--sub)')+';">'+(bdVal2?bdVal2.toLocaleString()+'원':'설정 없음')+'</span>';
 }
 
 /* ── 주문설정 모달 ── */
@@ -1699,7 +1830,7 @@ document.querySelectorAll('.brand-tab').forEach(btn=>{
     if(lockedBrands.length > 0 && !lockedBrands.includes(b)){ toast('🔒 관리자가 가게를 고정했습니다'); return; }
     if(orders.length&&!confirm('브랜드를 '+BRANDS[b].label+'(으)로 바꾸면\n현재 세션 주문이 보이지 않게 됩니다.\n계속할까요?')) return;
     brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect();
-    await Promise.all([fetchOrders(), loadDeadline(), loadHeadcount()]);
+    await Promise.all([fetchOrders(), loadDeadline(), loadHeadcount(), loadBudget()]);
     if(deadlineTs>Date.now()) startCountdown(); else tickCountdown();
     renderHeadcountBar();
   });
@@ -1709,6 +1840,9 @@ document.querySelectorAll('#tempSeg button').forEach(b=>b.addEventListener('clic
 $('selMenu').addEventListener('change',onMenuChange);
 $('btnAdd').addEventListener('click',addOrder);
 $('inpName').addEventListener('keydown',e=>{ if(e.key==='Enter') addOrder(); });
+$('inpName').addEventListener('input',()=> renderBudgetHint(getCurrentPrice()));
+$('chkShot').addEventListener('change',()=> renderBudgetHint(getCurrentPrice()));
+$('inpCustomPrice').addEventListener('input',()=> renderBudgetHint(getCurrentPrice()));
 $('btnReset').addEventListener('click',async()=>{
   if(!orders.length) return;
   if(!confirm('현재 세션 주문 '+orders.length+'건을 전부 삭제할까요?')) return;
@@ -1902,6 +2036,14 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
       await clearHeadcount();
     }
 
+    // 예산
+    const bdVal = parseInt($('inpBudget').value||'0', 10);
+    if(bdVal > 0){
+      await setBudget(bdVal);
+    } else {
+      await clearBudget();
+    }
+
     applySetupGuard();
     closeOrderModal();
     toast('✅ 주문설정이 저장되었습니다');
@@ -1925,6 +2067,7 @@ $('btnResetOrderSettings').addEventListener('click', async ()=>{
   if(countdownTimer) clearInterval(countdownTimer);
   $('deadlineBar').classList.remove('show');
   await clearHeadcount();
+  await clearBudget();
   closeOrderModal();
   toast('🔄 주문설정이 전체 해제되었습니다');
 });
@@ -1944,6 +2087,26 @@ document.querySelectorAll('[data-abrand]').forEach(b=>{
     renderPriceTable();
   });
 });
+// 예산 빠른선택
+document.querySelectorAll('.budget-quick-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const n = parseInt(btn.dataset.budget, 10);
+    $('inpBudget').value = n;
+    tmpBudget = n;
+    updateOrderSummary();
+  });
+});
+$('inpBudget').addEventListener('input',()=>{
+  tmpBudget = parseInt($('inpBudget').value||'0',10);
+  updateOrderSummary();
+});
+$('btnClearBudget').addEventListener('click',()=>{
+  tmpBudget = 0;
+  $('inpBudget').value = '';
+  updateOrderSummary();
+  toast('예산 해제됨 (저장 전)');
+});
+
 // 관리자 브랜드 탭 (삭제)
 document.querySelectorAll('[data-dbrand]').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -1960,6 +2123,117 @@ $('btnAddMenu').addEventListener('click',addMenu);
    총 주문 인원 설정 (Supabase 연동)
 ═══════════════════════════════════════ */
 let totalHeadcount = 0; // 0 = 미설정
+let budgetPerPerson = 0; // 0 = 미설정 (1인당 예산)
+let tmpBudget = 0;
+
+async function loadBudget(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&select=budget_per_person`
+    );
+    budgetPerPerson = data[0]?.budget_per_person || 0;
+  }catch(e){
+    console.warn('[예산] DB 로드 실패:', e.message);
+    budgetPerPerson = 0;
+  }
+}
+async function saveBudget(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: sessionId, brand,
+        budget_per_person: budgetPerPerson,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[예산] DB 저장 실패:', e.message); }
+}
+async function setBudget(n){
+  budgetPerPerson = n;
+  await saveBudget();
+  renderBudgetBar();
+}
+async function clearBudget(){
+  budgetPerPerson = 0;
+  try{
+    await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
+      { method: 'PATCH',
+        headers: {'Prefer': 'return=representation'},
+        body: JSON.stringify({budget_per_person: 0}) }
+    );
+  }catch(e){ console.warn('[예산] DB 초기화 실패:', e.message); }
+  $('budgetBar').classList.remove('show');
+  renderBudgetHint(0);
+}
+
+/* 1인 사용금액 계산: 이름 기준으로 현재 orders에서 합산 */
+function getMyUsed(name){
+  return orders.filter(o=>o.name===name).reduce((s,o)=>s+o.price,0);
+}
+
+function renderBudgetBar(){
+  const bar = $('budgetBar');
+  if(!budgetPerPerson){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+
+  // 현재 주문자 중 최대 사용자 기준 표시 (이름별 합산 평균도 가능하나 최대값이 직관적)
+  // → 전체 평균으로 표시
+  const names = [...new Set(orders.map(o=>o.name))];
+  const totalUsed = names.length
+    ? Math.round(orders.reduce((s,o)=>s+o.price,0) / names.length)
+    : 0;
+  const remain = budgetPerPerson - totalUsed;
+  const pct = Math.min(100, Math.round((totalUsed / budgetPerPerson)*100));
+
+  $('bdUsed').textContent = totalUsed.toLocaleString()+'원';
+  $('bdRemain').textContent = Math.abs(remain).toLocaleString()+(remain<0?'원 초과':'원');
+  $('bdTotal').textContent = budgetPerPerson.toLocaleString()+'원';
+  $('bdProgressFill').style.width = pct+'%';
+
+  const remainEl = $('bdRemain');
+  const fill = $('bdProgressFill');
+  if(remain < 0){
+    remainEl.className = 'budget-num remain over';
+    fill.style.background = 'var(--danger)';
+    $('bdStatus').textContent = `⚠️ 평균 ${Math.abs(remain).toLocaleString()}원 초과`;
+    $('bdStatus').className = 'budget-status over';
+  } else if(pct >= 80){
+    remainEl.className = 'budget-num remain warn';
+    fill.style.background = '#F59E0B';
+    $('bdStatus').textContent = `⚡ 예산 ${pct}% 사용 중`;
+    $('bdStatus').className = 'budget-status';
+  } else {
+    remainEl.className = 'budget-num remain';
+    fill.style.background = '#16A34A';
+    $('bdStatus').textContent = `✅ 예산 ${pct}% 사용 중`;
+    $('bdStatus').className = 'budget-status';
+  }
+}
+
+/* 주문폼 힌트: 이름 입력 + 메뉴 선택 시 실시간 표시 */
+function renderBudgetHint(price){
+  const hint = $('budgetHint');
+  if(!budgetPerPerson || !price){ hint.classList.remove('show'); return; }
+  const name = $('inpName').value.trim();
+  const used = name ? getMyUsed(name) : 0;
+  const remain = budgetPerPerson - used;
+  const afterOrder = remain - price;
+
+  hint.classList.add('show');
+  if(afterOrder >= 0){
+    hint.className = 'budget-hint show ok';
+    hint.textContent = `💰 주문 후 잔여예산 ${afterOrder.toLocaleString()}원`;
+  } else if(remain <= 0){
+    hint.className = 'budget-hint show over';
+    hint.textContent = `❌ 예산 초과 — 잔여예산 없음 (${Math.abs(remain).toLocaleString()}원 초과)`;
+  } else {
+    hint.className = 'budget-hint show over';
+    hint.textContent = `❌ 금액 부족 — 잔여 ${remain.toLocaleString()}원 / 주문금액 ${price.toLocaleString()}원`;
+  }
+}
 
 async function loadHeadcount(){
   try{
@@ -2347,6 +2621,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
     fetchOrders(),
     loadDeadline(),
     loadHeadcount(),
+    loadBudget(),
     loadStoreLock(),
     fetchMenusFromDB(),
   ]);
