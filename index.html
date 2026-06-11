@@ -987,7 +987,9 @@ function newSession(){
    Supabase REST
 ═══════════════════════════════════════ */
 async function sbFetch(path,options={}){
-  const res=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:HEADERS,...options});
+  const {headers:extraHeaders, ...restOptions} = options;
+  const mergedHeaders = {...HEADERS, ...(extraHeaders||{})};
+  const res=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:mergedHeaders,...restOptions});
   if(!res.ok) throw new Error(await res.text());
   const t=await res.text(); return t?JSON.parse(t):[];
 }
@@ -1530,7 +1532,7 @@ async function saveHeadcount(){
   try{
     await sbFetch('session_settings', {
       method: 'POST',
-      headers: {...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
         session_id: sessionId, brand,
         headcount: totalHeadcount,
@@ -1551,7 +1553,7 @@ async function clearHeadcount(){
     await sbFetch(
       `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
       { method: 'PATCH',
-        headers: {...HEADERS, 'Prefer': 'return=representation'},
+        headers: {'Prefer': 'return=representation'},
         body: JSON.stringify({headcount: 0}) }
     );
   }catch(e){ console.warn('[인원] DB 초기화 실패:', e.message); }
@@ -1639,7 +1641,7 @@ async function saveDeadline(){
   try{
     await sbFetch('session_settings', {
       method: 'POST',
-      headers: {...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
         session_id: sessionId, brand,
         deadline_ts: deadlineTs,
@@ -1655,7 +1657,7 @@ async function clearDeadlineData(){
     await sbFetch(
       `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
       { method: 'PATCH',
-        headers: {...HEADERS, 'Prefer': 'return=representation'},
+        headers: {'Prefer': 'return=representation'},
         body: JSON.stringify({deadline_ts: 0, deadline_start_ts: 0}) }
     );
   }catch(e){ console.warn('[마감] DB 초기화 실패:', e.message); }
@@ -1761,7 +1763,7 @@ $('btnSetDeadline').addEventListener('click', async ()=>{
 });
 
 // 해제
-$('btnClearDeadline').addEventListener('click',()=>{
+$('btnClearDeadline').addEventListener('click', async ()=>{
   await clearDeadlineData();
   if(countdownTimer) clearInterval(countdownTimer);
   $('deadlineBar').classList.remove('show');
@@ -1772,34 +1774,41 @@ $('btnClearDeadline').addEventListener('click',()=>{
 /* ═══════════════════════════════════════
    초기 실행
 ═══════════════════════════════════════ */
-loadSession();
-$('todayDate').textContent=todayStr();
-$('sessionLabel').textContent=sessionId;
-applyBrandTheme();
-renderCats();
-renderMenuSelect();
-fetchOrders();
-connectRealtime();
+(async () => {
+  loadSession();
+  $('todayDate').textContent = todayStr();
+  $('sessionLabel').textContent = sessionId;
+  applyBrandTheme();
+  renderCats();
+  renderMenuSelect();
 
-// 마감시간 & 인원 DB 로드 후 초기화
-(async()=>{
-  await Promise.all([loadDeadline(), loadHeadcount()]);
+  // DB 병렬 로드
+  await Promise.all([
+    fetchOrders(),
+    loadDeadline(),
+    loadHeadcount(),
+    fetchMenusFromDB(),
+  ]);
+
+  // 마감시간 카운트다운 시작
   if(deadlineTs && deadlineTs > Date.now()) startCountdown();
   else if(deadlineTs) tickCountdown();
+
+  // 인원 현황 바
   renderHeadcountBar();
+
+  // 실시간 WebSocket
+  connectRealtime();
+
+  // 관리자 DB 메뉴 새로고침 버튼
+  $('btnRefreshMenus').addEventListener('click', async () => {
+    toast('메뉴 새로고침 중...');
+    await fetchMenusFromDB(true);
+    toast('✅ 최신 메뉴로 업데이트되었습니다');
+    renderPriceTable();
+    renderDelMenuList();
+  });
 })();
-
-// DB에서 최신 메뉴 로드 (캐시 60분)
-fetchMenusFromDB();
-
-// 관리자 - DB 메뉴 새로고침 버튼
-$('btnRefreshMenus').addEventListener('click', async ()=>{
-  toast('메뉴 새로고침 중...');
-  await fetchMenusFromDB(true);
-  toast('✅ 최신 메뉴로 업데이트되었습니다');
-  renderPriceTable();
-  renderDelMenuList();
-});
 </script>
 </body>
 </html>
