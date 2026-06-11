@@ -275,6 +275,17 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   transition:all .25s;z-index:999;white-space:nowrap;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* ── 통합주문서 ── */
+.arc-brand-section{ margin-bottom:14px; }
+.arc-brand-head{
+  display:flex; align-items:center; gap:8px;
+  background:var(--primary); color:#fff;
+  padding:8px 12px; border-radius:10px; margin-bottom:6px;
+  font-size:.88rem; font-weight:800;
+}
+.arc-brand-head .arc-icon{ font-size:1.1rem; }
+.arc-brand-total{ font-size:.78rem; opacity:.85; margin-left:auto; font-variant-numeric:tabular-nums; }
+.arc-empty{ text-align:center; color:var(--sub); font-size:.82rem; padding:14px 0; }
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -417,6 +428,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 .current-deadline.show{display:block;}
 .current-deadline .cd-label{font-size:.72rem;font-weight:700;color:#6366F1;margin-bottom:3px;}
 .current-deadline .cd-val{font-size:1rem;font-weight:800;color:#3730A3;}
+body.modal-open{overflow:hidden;}
 @media(prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
 </head>
@@ -531,7 +543,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <div class="cups" id="barCups">0잔</div>
     <div class="total" id="barTotal">0원</div>
   </div>
-  <button class="btn-receipt" id="btnOpenReceipt">📋 주문서 보기</button>
+  <div style="display:flex;gap:6px;"><button class="btn-receipt" id="btnOpenReceipt">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" style="display:none;">🗂 통합주문서</button></div>
 </div>
 
 <!-- 영수증 모달 -->
@@ -546,6 +558,26 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <div class="receipt-btns">
       <button class="btn-copy" id="btnCopy">주문서 복사</button>
       <button class="btn-close-r" id="btnCloseReceipt">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 통합주문서 모달 -->
+<div class="modal-bg" id="modalAllReceipt">
+  <div class="modal-sheet receipt">
+    <div class="receipt-head">
+      <div class="shop" id="arcShop">🗂 통합 주문서</div>
+      <div class="meta" id="arcMeta"></div>
+    </div>
+    <!-- 가게별 섹션 -->
+    <div id="arcBody"></div>
+    <!-- 전체 합계 -->
+    <div class="receipt-total" style="border-top:2px solid var(--line);margin-top:4px;">
+      <span>전체 합계</span><span id="arcTotal">0원</span>
+    </div>
+    <div class="receipt-btns">
+      <button class="btn-copy" id="btnCopyAll">통합주문서 복사</button>
+      <button class="btn-close-r" id="btnCloseAllReceipt">닫기</button>
     </div>
   </div>
 </div>
@@ -755,188 +787,6 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   </div>
 </div>
 
-<!-- (구) 관리자 모달 placeholder (JS 호환용) -->
-<div id="modalAdmin" style="display:none;"></div>
-
-    <!-- 패널: 가격 수정 -->
-    <div class="admin-panel show" id="panelPrice">
-      <div style="margin-bottom:10px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
-        <div class="admin-tabs" id="adminBrandTabs" style="margin-bottom:0;">
-          <button class="admin-tab active" data-abrand="paik">빽다방</button>
-          <button class="admin-tab" data-abrand="mega">메가커피</button>
-          <button class="admin-tab" data-abrand="compose">컴포즈</button>
-        </div>
-      </div>
-      <div class="shot-inp-row">
-        <label for="inpShotPrice">샷 추가 가격</label>
-        <input type="number" class="price-inp" id="inpShotPrice" min="0" step="100">
-        <span style="font-size:.82rem;color:var(--sub);">원</span>
-      </div>
-      <table class="price-table" id="priceTable">
-        <thead><tr><th>메뉴</th><th style="text-align:right;">HOT</th><th style="text-align:right;">ICE</th></tr></thead>
-        <tbody id="priceTableBody"></tbody>
-      </table>
-      <button class="btn-save-prices" id="btnSavePrices">✅ 가격 저장</button>
-      <div class="save-notice">저장하면 이 기기의 모든 메뉴 가격이 업데이트됩니다.</div>
-    </div>
-
-    <!-- 패널: 메뉴 추가 -->
-    <div class="admin-panel" id="panelAdd">
-      <div class="add-menu-form">
-        <h3>새 메뉴 추가</h3>
-        <div class="form-row">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">브랜드</div>
-            <select class="inp-sm" id="addBrand">
-              <option value="paik">빽다방</option>
-              <option value="mega">메가커피</option>
-              <option value="compose">컴포즈</option>
-            </select>
-          </div>
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">카테고리</div>
-            <select class="inp-sm" id="addCat"></select>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">메뉴 이름</div>
-          <input type="text" class="inp-sm" id="addName" placeholder="예: 흑당버블라떼" maxlength="20">
-        </div>
-        <div class="form-row">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">HOT 가격 (없으면 빈칸)</div>
-            <input type="number" class="inp-sm" id="addHot" placeholder="예: 3500" min="0" step="100">
-          </div>
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">ICE 가격 (없으면 빈칸)</div>
-            <input type="number" class="inp-sm" id="addIce" placeholder="예: 3500" min="0" step="100">
-          </div>
-        </div>
-        <button class="btn-form-add" id="btnAddMenu">메뉴 추가</button>
-      </div>
-    </div>
-
-    <!-- 패널: 메뉴 삭제 -->
-    <div class="admin-panel" id="panelDel">
-      <div style="margin-bottom:10px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
-        <div class="admin-tabs" id="delBrandTabs" style="margin-bottom:0;">
-          <button class="admin-tab active" data-dbrand="paik">빽다방</button>
-          <button class="admin-tab" data-dbrand="mega">메가커피</button>
-          <button class="admin-tab" data-dbrand="compose">컴포즈</button>
-        </div>
-      </div>
-      <div id="delMenuList"></div>
-    </div>
-
-    <!-- 패널: 마감시간 -->
-    <div class="admin-panel" id="panelDeadline">
-      <!-- 현재 설정된 마감시간 -->
-      <div class="current-deadline" id="currentDeadlineBox">
-        <div class="cd-label">현재 마감시간</div>
-        <div class="cd-val" id="currentDeadlineVal">-</div>
-      </div>
-
-      <div class="time-setting-box">
-        <h3>⏰ 주문 마감시간 설정</h3>
-        <!-- 빠른 설정 -->
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 설정</div>
-        <div class="preset-btns" id="presetBtns">
-          <button class="preset-btn" data-min="10">+10분</button>
-          <button class="preset-btn" data-min="20">+20분</button>
-          <button class="preset-btn" data-min="30">+30분</button>
-          <button class="preset-btn" data-min="60">+1시간</button>
-        </div>
-        <!-- 직접 입력 -->
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">시간 직접 입력</div>
-        <div class="time-row">
-          <label>마감 시각</label>
-          <input type="time" class="time-inp" id="inpDeadlineTime">
-        </div>
-        <button class="btn-set-deadline" id="btnSetDeadline">⏰ 마감시간 설정</button>
-        <button class="btn-clear-deadline" id="btnClearDeadline">마감시간 해제</button>
-      </div>
-      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
-        마감시간이 설정되면 앱 상단에 카운트다운이 표시됩니다.<br>
-        5분 이하 남으면 빨간색으로 긴박하게 표시됩니다.
-      </div>
-    </div>
-
-    <!-- 패널: 인원설정 -->
-    <div class="admin-panel" id="panelHeadcount">
-      <!-- 현재 설정 -->
-      <div class="current-deadline" id="currentHeadcountBox">
-        <div class="cd-label">현재 설정 인원</div>
-        <div class="cd-val" id="currentHeadcountVal">-</div>
-      </div>
-
-      <div class="headcount-setting-box">
-        <h3>📋 총 주문 잔 수 설정</h3>
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
-        <div class="hc-quick-btns">
-          <button class="hc-quick-btn" data-hc="10">10잔</button>
-          <button class="hc-quick-btn" data-hc="20">20잔</button>
-          <button class="hc-quick-btn" data-hc="30">30잔</button>
-          <button class="hc-quick-btn" data-hc="40">40잔</button>
-          <button class="hc-quick-btn" data-hc="50">50잔</button>
-        </div>
-        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
-        <div class="hc-inp-row">
-          <input type="number" class="hc-inp" id="inpHeadcount" min="1" max="200" placeholder="예: 40">
-          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">잔</span>
-        </div>
-        <button class="btn-set-headcount" id="btnSetHeadcount">👥 인원 설정</button>
-        <button class="btn-clear-headcount" id="btnClearHeadcount">인원 설정 해제</button>
-      </div>
-      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
-        총 주문잔수를 설정하면 주문잔수 / 미주문잔 / 전체 현황이<br>앱 상단에 진행바로 표시됩니다.
-      </div>
-    </div>
-    <!-- 패널: 가게설정 -->
-    <div class="admin-panel" id="panelStore">
-      <!-- 현재 설정 -->
-      <div class="current-store-box" id="currentStoreBox">
-        <div class="cs-icon" id="currentStoreIcon">☕</div>
-        <div class="cs-info">
-          <div class="cs-label">현재 선택된 가게</div>
-          <div class="cs-val" id="currentStoreVal">-</div>
-        </div>
-      </div>
-
-      <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:10px;">가게를 선택하면 브랜드 탭이 잠겨 일반 사용자가 변경할 수 없습니다.</div>
-
-      <div class="store-card" data-store="paik" id="storeCardPaik">
-        <div class="store-icon">🐔</div>
-        <div class="store-info">
-          <div class="store-name">빽다방</div>
-          <div class="store-desc">백종원의 빽다방 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-      <div class="store-card" data-store="mega" id="storeCardMega">
-        <div class="store-icon">☕</div>
-        <div class="store-info">
-          <div class="store-name">메가커피</div>
-          <div class="store-desc">메가MGC커피 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-      <div class="store-card" data-store="compose" id="storeCardCompose">
-        <div class="store-icon">🎵</div>
-        <div class="store-info">
-          <div class="store-name">컴포즈커피</div>
-          <div class="store-desc">컴포즈커피 · 아메리카노 2,000원~</div>
-        </div>
-        <div class="store-check">✅</div>
-      </div>
-
-      <button class="btn-set-store" id="btnSetStore">🏪 이 가게로 설정 (잠금)</button>
-      <button class="btn-unlock-store" id="btnUnlockStore">🔓 가게 잠금 해제</button>
-    </div>
-
-  </div>
-</div>
 
 <!-- PIN 모달 -->
 <div class="pin-modal-bg" id="pinModalBg">
@@ -1264,10 +1114,12 @@ async function deleteOrder(id){ return sbFetch(`coffee_orders?id=eq.${id}`,{meth
 async function deleteSession(){ return sbFetch(`coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,{method:'DELETE'}); }
 
 /* ── Realtime ── */
+let rtHbTimer = null;
 function connectRealtime(){
   const ws=new WebSocket(SUPA_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SUPA_KEY+'&vsn=1.0.0');
   ws.onopen=()=>{
     ws.send(JSON.stringify({topic:'realtime:public:coffee_orders',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'1'}));
+    ws.send(JSON.stringify({topic:'realtime:public:session_settings',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'2'}));
     setSyncStatus('ok','실시간 연결됨');
   };
   ws.onmessage=e=>{
@@ -1276,8 +1128,9 @@ function connectRealtime(){
       if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
         const tbl = msg.payload?.table || msg.topic || '';
         if(tbl.includes('session_settings')){
-          loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown(); });
+          loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else tickCountdown(); });
           loadHeadcount().then(()=> renderHeadcountBar());
+          loadStoreLock();
         } else {
           fetchOrders();
         }
@@ -1285,14 +1138,23 @@ function connectRealtime(){
     }catch(err){}
   };
   ws.onerror=()=>setSyncStatus('err','연결 오류');
-  ws.onclose=()=>{ setSyncStatus('err','재연결 중...'); setTimeout(connectRealtime,3000); };
-  setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); },30000);
+  ws.onclose=()=>{
+    if(rtHbTimer){ clearInterval(rtHbTimer); rtHbTimer=null; }
+    setSyncStatus('err','재연결 중...'); setTimeout(connectRealtime,3000);
+  };
+  if(rtHbTimer) clearInterval(rtHbTimer);
+  rtHbTimer = setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); },30000);
 }
 
 /* ═══════════════════════════════════════
    UI 헬퍼
 ═══════════════════════════════════════ */
 const $=id=>document.getElementById(id);
+// 모달 열림 시 배경 스크롤 잠금
+new MutationObserver(()=>{
+  const anyOpen = document.querySelector('.modal-bg.show, .pin-modal-bg.show');
+  document.body.classList.toggle('modal-open', !!anyOpen);
+}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class']});
 const won=n=>n.toLocaleString('ko-KR')+'원';
 function setSyncStatus(st,txt){ $('syncDot').className='sync-dot '+st; $('syncText').textContent=txt; }
 
@@ -1352,7 +1214,8 @@ function renderOrders(){
     orders.forEach(o=>{
       const div=document.createElement('div'); div.className='order-item';
       const opts=[o.shot?'샷추가':null,o.memo||null].filter(Boolean);
-      div.innerHTML='<div class="who"></div><div class="what"><div class="menu-name"><span class="temp-chip '+o.temp+'">'+o.temp+'</span><span class="mn"></span></div>'+(opts.length?'<div class="menu-opt"></div>':'')+'</div><div class="price">'+won(o.price)+'</div><button class="del" aria-label="삭제">✕</button>';
+      const safeTemp = o.temp==='HOT' ? 'HOT' : 'ICE'; // XSS 방지 화이트리스트
+      div.innerHTML='<div class="who"></div><div class="what"><div class="menu-name"><span class="temp-chip '+safeTemp+'">'+safeTemp+'</span><span class="mn"></span></div>'+(opts.length?'<div class="menu-opt"></div>':'')+'</div><div class="price">'+won(o.price)+'</div><button class="del" aria-label="삭제">✕</button>';
       div.querySelector('.who').textContent=o.name;
       div.querySelector('.mn').textContent=o.menu;
       if(opts.length) div.querySelector('.menu-opt').textContent=opts.join(' · ');
@@ -1369,6 +1232,8 @@ function renderOrders(){
   $('barCups').textContent=orders.length+'잔 · '+people+'명';
   $('barTotal').textContent=won(total);
   renderHeadcountBar();
+  // 가게 2개 이상 선택 시 통합주문서 버튼 표시
+  $('btnOpenAllReceipt').style.display = lockedBrands.length >= 2 ? '' : 'none';
 }
 
 /* ═══════════════════════════════════════
@@ -1527,14 +1392,13 @@ function initTempSettings(){
   document.querySelectorAll('.store-card').forEach(c=>
     c.classList.toggle('selected', tmpBrands.includes(c.dataset.store))
   );
-  // 마감시간 입력
+  // 마감시간 입력 (설정된 경우에만 표시 — 요약/저장값 불일치 방지)
   if(tmpDeadlineTs > Date.now()){
     const d = new Date(tmpDeadlineTs);
     $('inpDeadlineTime').value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   } else {
-    const d = new Date(Date.now() + 30*60*1000);
-    $('inpDeadlineTime').value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    if(!tmpDeadlineTs) tmpDeadlineTs = 0;
+    tmpDeadlineTs = 0;
+    $('inpDeadlineTime').value = '';
   }
   // 잔수 입력
   $('inpHeadcount').value = tmpHeadcount || '';
@@ -1543,7 +1407,7 @@ function initTempSettings(){
 
 function updateOrderSummary(){
   // 가게
-  const sel = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
+  const sel = [...new Set([...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store))];
   const storeStr = sel.length ? sel.map(b=>STORE_META[b].name).join(', ') : '설정 없음 (전체)';
   $('summaryStore').innerHTML = '🏪 가게: <span style="color:'+(sel.length?'var(--primary)':'var(--sub)')+';">'+storeStr+'</span>';
 
@@ -1620,6 +1484,148 @@ function aggregate(){
   });
   return [...map.values()].sort((a,b)=>b.qty-a.qty);
 }
+
+/* ── 통합주문서 ── */
+async function openAllReceipt(){
+  // 세션 전체 브랜드 주문 조회
+  let allData = [];
+  try{
+    allData = await sbFetch(
+      `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=brand,created_at.asc`
+    );
+  }catch(e){ toast('DB 오류: '+e.message); return; }
+
+  if(!allData.length){ toast('주문이 없습니다'); return; }
+
+  // 브랜드별 그룹핑
+  const brandGroups = {};
+  allData.forEach(o=>{
+    if(!brandGroups[o.brand]) brandGroups[o.brand] = [];
+    brandGroups[o.brand].push(o);
+  });
+
+  const activeBrands = Object.keys(brandGroups);
+  const grandTotal = allData.reduce((s,o)=>s+o.price, 0);
+
+  $('arcMeta').textContent = todayStr() + ' · 총 ' + allData.length + '잔 · ' + activeBrands.length + '개 가게';
+  $('arcTotal').textContent = won(grandTotal);
+
+  const body = $('arcBody');
+  body.innerHTML = '';
+
+  activeBrands.forEach(b=>{
+    const bOrders = brandGroups[b];
+    const bTotal = bOrders.reduce((s,o)=>s+o.price, 0);
+    const meta = STORE_META[b] || { name: b, icon:'☕' };
+
+    // 브랜드별 집계
+    const map = new Map();
+    bOrders.forEach(o=>{
+      const key=[o.temp,o.menu,o.shot?'샷추가':'',o.memo].join('|');
+      if(!map.has(key)) map.set(key,{...o,qty:0,sum:0,people:[]});
+      const g=map.get(key); g.qty++; g.sum+=o.price; g.people.push(o.name);
+    });
+    const groups = [...map.values()].sort((a,b)=>b.qty-a.qty);
+
+    const section = document.createElement('div');
+    section.className = 'arc-brand-section';
+
+    // 브랜드 헤더
+    const head = document.createElement('div');
+    head.className = 'arc-brand-head';
+    head.innerHTML = '<span class="arc-icon">'+meta.icon+'</span>'
+      +'<span>'+meta.name+'</span>'
+      +'<span class="arc-brand-total">'+bOrders.length+'잔 / '+won(bTotal)+'</span>';
+    section.appendChild(head);
+
+    // 메뉴 라인들
+    groups.forEach(g=>{
+      const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+      const line = document.createElement('div');
+      line.className = 'receipt-line';
+      line.innerHTML = '<span class="nm"><b>'+(g.temp==='HOT'?'HOT':'ICE')+'</b> <span class="gname"></span><span class="gopts"></span>'
+        +'<span class="ppl"></span></span>'
+        +'<span class="qt">× '+g.qty+'</span>'
+        +'<span class="pr">'+won(g.sum)+'</span>';
+      const goEl=line.querySelector('.gopts');
+      if(opts){ const sp=document.createElement('span'); sp.style.cssText='color:#7A7670;font-size:.8em'; sp.textContent=' ('+opts+')'; goEl.replaceWith(sp); }
+      else { goEl.remove(); }
+      line.querySelector('.gname').textContent = g.menu;
+      line.querySelector('.ppl').textContent = g.people.join(', ');
+      section.appendChild(line);
+    });
+
+    // 브랜드 소계
+    const sub = document.createElement('div');
+    sub.style.cssText = 'display:flex;justify-content:flex-end;font-size:.78rem;color:var(--sub);padding:4px 2px 0;';
+    sub.textContent = '소계 ' + won(bTotal);
+    section.appendChild(sub);
+
+    body.appendChild(section);
+
+    // 구분선 (마지막 제외)
+    if(b !== activeBrands[activeBrands.length-1]){
+      const hr = document.createElement('div');
+      hr.style.cssText = 'border-top:1px dashed var(--line);margin:10px 0;';
+      body.appendChild(hr);
+    }
+  });
+
+  $('modalAllReceipt').classList.add('show');
+}
+
+async function copyAllReceipt(){
+  let allData = [];
+  try{
+    allData = await sbFetch(
+      `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=brand,created_at.asc`
+    );
+  }catch(e){ toast('DB 오류'); return; }
+
+  if(!allData.length){ toast('주문이 없습니다'); return; }
+
+  const brandGroups = {};
+  allData.forEach(o=>{
+    if(!brandGroups[o.brand]) brandGroups[o.brand] = [];
+    brandGroups[o.brand].push(o);
+  });
+
+  const grandTotal = allData.reduce((s,o)=>s+o.price,0);
+  let txt = '🗂 통합 주문서 ('+todayStr()+')\n';
+  txt += '══════════════\n';
+
+  Object.keys(brandGroups).forEach(b=>{
+    const bOrders = brandGroups[b];
+    const bTotal = bOrders.reduce((s,o)=>s+o.price,0);
+    const meta = STORE_META[b]||{name:b,icon:'☕'};
+    txt += '\n'+meta.icon+' '+meta.name+' ('+bOrders.length+'잔)\n';
+    txt += '──────────────\n';
+
+    const map = new Map();
+    bOrders.forEach(o=>{
+      const key=[o.temp,o.menu,o.shot?'샷추가':'',o.memo].join('|');
+      if(!map.has(key)) map.set(key,{...o,qty:0,sum:0});
+      const g=map.get(key); g.qty++; g.sum+=o.price;
+    });
+    [...map.values()].sort((a,bb)=>bb.qty-a.qty).forEach(g=>{
+      const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+      txt+=g.temp+' '+g.menu+(opts?' ('+opts+')':'')+' × '+g.qty+'\n';
+    });
+    txt += '소계: '+won(bTotal)+'\n';
+  });
+
+  txt += '\n══════════════\n';
+  txt += '전체 합계: '+won(grandTotal)+' ('+allData.length+'잔)';
+
+  navigator.clipboard.writeText(txt)
+    .then(()=>toast('통합주문서가 복사되었습니다 📋'))
+    .catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=txt;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+      toast('통합주문서가 복사되었습니다 📋');
+    });
+}
 function openReceipt(){
   if(!orders.length){ toast('주문이 아직 없습니다'); return; }
   const groups=aggregate();
@@ -1630,7 +1636,10 @@ function openReceipt(){
   groups.forEach(g=>{
     const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
     const line=document.createElement('div'); line.className='receipt-line';
-    line.innerHTML='<span class="nm"><b>'+g.temp+'</b> <span class="gname"></span>'+(opts?' <span style="color:#7A7670;font-size:.8em">('+opts+')</span>':'')+'<span class="ppl"></span></span><span class="qt">× '+g.qty+'</span><span class="pr">'+won(g.sum)+'</span>';
+    line.innerHTML='<span class="nm"><b>'+(g.temp==='HOT'?'HOT':'ICE')+'</b> <span class="gname"></span><span class="gopts"></span><span class="ppl"></span></span><span class="qt">× '+g.qty+'</span><span class="pr">'+won(g.sum)+'</span>';
+    const goEl2=line.querySelector('.gopts');
+    if(opts){ const sp=document.createElement('span'); sp.style.cssText='color:#7A7670;font-size:.8em'; sp.textContent=' ('+opts+')'; goEl2.replaceWith(sp); }
+    else { goEl2.remove(); }
     line.querySelector('.gname').textContent=g.menu;
     line.querySelector('.ppl').textContent=g.people.join(', ');
     body.appendChild(line);
@@ -1672,7 +1681,10 @@ document.querySelectorAll('.brand-tab').forEach(btn=>{
     const b=btn.dataset.brand; if(b===brand) return;
     if(lockedBrands.length > 0 && !lockedBrands.includes(b)){ toast('🔒 관리자가 가게를 고정했습니다'); return; }
     if(orders.length&&!confirm('브랜드를 '+BRANDS[b].label+'(으)로 바꾸면\n현재 세션 주문이 보이지 않게 됩니다.\n계속할까요?')) return;
-    brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect(); await fetchOrders();
+    brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect();
+    await Promise.all([fetchOrders(), loadDeadline(), loadHeadcount()]);
+    if(deadlineTs>Date.now()) startCountdown(); else tickCountdown();
+    renderHeadcountBar();
   });
 });
 // 온도
@@ -1691,6 +1703,10 @@ $('btnNewSession').addEventListener('click',()=>{
 });
 // 영수증
 $('btnOpenReceipt').addEventListener('click',openReceipt);
+$('btnOpenAllReceipt').addEventListener('click',openAllReceipt);
+$('btnCopyAll').addEventListener('click',copyAllReceipt);
+$('btnCloseAllReceipt').addEventListener('click',()=>$('modalAllReceipt').classList.remove('show'));
+$('modalAllReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
 $('btnCopy').addEventListener('click',copyReceipt);
 $('btnCloseReceipt').addEventListener('click',()=>$('modalReceipt').classList.remove('show'));
 $('modalReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
@@ -1762,6 +1778,15 @@ function handlePinDel(){
 function processPinComplete(){
   if(pinMode === 'verify'){
     if(pinBuffer === getPin()){
+      if(pinTarget === 'change'){
+        // 현재 PIN 검증 통과 → 새 PIN 설정 모드로 전환
+        pinBuffer = ''; pinNewTemp = '';
+        pinMode = 'set_new';
+        $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
+        renderPinDots();
+        $('pinErrorMsg').textContent = '';
+        return;
+      }
       closePinModal();
       if(pinTarget === 'menu') openMenuModal();
       else openOrderModal();
@@ -1799,9 +1824,9 @@ $('pinDelKey').addEventListener('click', handlePinDel);
 $('btnPinCancel').addEventListener('click', closePinModal);
 $('pinModalBg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closePinModal(); });
 $('btnPinChange').addEventListener('click', ()=>{
-  // 현재 PIN 먼저 확인 후 변경 모드
+  // 현재 PIN 검증 후 변경 모드
   closePinModal();
-  setTimeout(()=> openPinModal('set_new'), 200);
+  setTimeout(()=> openPinModal('verify', 'change'), 200);
 });
 
 // 키보드 입력 지원
@@ -1816,7 +1841,7 @@ document.addEventListener('keydown', e=>{
 // 주문설정 버튼
 $('btnOrderOpen').addEventListener('click', ()=> openPinModal('verify', 'order'));
 $('btnOrderClose').addEventListener('click', closeOrderModal);
-$('btnChangePinFromOrder').addEventListener('click',()=>{ closeOrderModal(); setTimeout(()=>openPinModal('set_new'),200); });
+$('btnChangePinFromOrder').addEventListener('click',()=>{ closeOrderModal(); setTimeout(()=>openPinModal('verify','change'),200); });
 $('modalOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeOrderModal(); });
 document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.addEventListener('click',()=>{ switchOrderTab(b.dataset.otab); updateOrderSummary(); }));
 // 주문설정 통합 저장
@@ -1825,7 +1850,7 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
   btn.disabled = true; btn.textContent = '저장 중...';
   try{
     // 가게 설정
-    const selBrands = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
+    const selBrands = [...new Set([...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store))];
     await setStoreLock(selBrands);
 
     // 마감시간
@@ -1875,7 +1900,7 @@ $('btnResetOrderSettings').addEventListener('click', async ()=>{
 // 메뉴수정 버튼
 $('btnMenuOpen').addEventListener('click', ()=> openPinModal('verify', 'menu'));
 $('btnMenuClose').addEventListener('click', closeMenuModal);
-$('btnChangePinFromMenu').addEventListener('click',()=>{ closeMenuModal(); setTimeout(()=>openPinModal('set_new'),200); });
+$('btnChangePinFromMenu').addEventListener('click',()=>{ closeMenuModal(); setTimeout(()=>openPinModal('verify','change'),200); });
 $('modalMenu').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeMenuModal(); });
 document.querySelectorAll('.admin-tab[data-mtab]').forEach(b=>b.addEventListener('click',()=>switchMenuTab(b.dataset.mtab)));
 // 관리자 브랜드 탭 (가격)
@@ -1976,9 +2001,10 @@ function renderHeadcountBar(){
 
 function updateCurrentHeadcountBox(){
   const box = $('currentHeadcountBox');
+  if(!box) return;
   if(!totalHeadcount){ box.classList.remove('show'); return; }
   box.classList.add('show');
-  $('currentHeadcountVal').textContent = `총 ${totalHeadcount}명`;
+  $('currentHeadcountVal').textContent = `총 ${totalHeadcount}잔`;
 }
 
 // 관리자 패널 이벤트
@@ -2065,6 +2091,9 @@ function applyStoreLock(){
       btn.classList.remove('brand-hidden');
     });
   }
+  // 가게 2개 이상 선택 시 통합주문서 버튼 표시
+  const allBtn = $('btnOpenAllReceipt');
+  if(allBtn) allBtn.style.display = lockedBrands.length >= 2 ? '' : 'none';
 }
 
 async function setStoreLock(brands){
@@ -2084,6 +2113,7 @@ async function clearStoreLock(){
 
 function updateCurrentStoreBox(){
   const box = $('currentStoreBox');
+  if(!box) return;
   if(!lockedBrands.length){ box.classList.remove('show'); return; }
   box.classList.add('show');
   $('currentStoreIcon').textContent = lockedBrands.map(b=>STORE_META[b].icon).join('');
@@ -2092,8 +2122,8 @@ function updateCurrentStoreBox(){
 
 function renderStorePanelSelection(){
   ['paik','mega','compose'].forEach(b=>{
-    $('storeCard'+b.charAt(0).toUpperCase()+b.slice(1))
-      .classList.toggle('selected', lockedBrands.includes(b));
+    const card = $('storeCard'+b.charAt(0).toUpperCase()+b.slice(1));
+    if(card) card.classList.toggle('selected', lockedBrands.includes(b));
   });
   updateCurrentStoreBox();
 }
@@ -2106,12 +2136,7 @@ document.querySelectorAll('.store-card').forEach(card=>{
   });
 });
 
-// 가게 전체 해제 버튼
-$('btnUnlockStore').addEventListener('click',()=>{
-  document.querySelectorAll('.store-card').forEach(c=>c.classList.remove('selected'));
-  updateOrderSummary();
-  toast('가게 선택 해제됨 (저장 전)');
-});
+
 
 /* ═══════════════════════════════════════
    마감시간 카운트다운 (Supabase 연동)
@@ -2221,6 +2246,7 @@ function tickCountdown(){
 
 function updateCurrentDeadlineBox(){
   const box = $('currentDeadlineBox');
+  if(!box) return;
   if(!deadlineTs){ box.classList.remove('show'); return; }
   box.classList.add('show');
   const d = new Date(deadlineTs);
