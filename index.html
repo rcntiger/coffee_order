@@ -30,6 +30,48 @@ header .date{font-size:.8rem;opacity:.75;}
   font-size:.78rem;font-weight:700;font-family:inherit;
   padding:5px 10px;border-radius:8px;cursor:pointer;
 }
+
+/* ── PIN 모달 ── */
+.pin-modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:60;align-items:center;justify-content:center;
+}
+.pin-modal-bg.show{display:flex;}
+.pin-box{
+  background:#fff;border-radius:22px;padding:28px 24px 24px;
+  width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);
+}
+.pin-box h3{font-size:1rem;font-weight:800;margin-bottom:4px;}
+.pin-box .pin-sub{font-size:.78rem;color:var(--sub);margin-bottom:20px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:22px;}
+.pin-dot{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--line);background:#fff;transition:all .15s;
+}
+.pin-dot.filled{background:var(--primary);border-color:var(--primary);}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.pin-key{
+  padding:16px 0;border:1.5px solid var(--line);border-radius:12px;
+  font-size:1.2rem;font-weight:800;font-family:inherit;
+  background:#FAFAF8;color:var(--text);cursor:pointer;transition:all .1s;
+}
+.pin-key:active{background:var(--primary);color:#fff;transform:scale(.95);}
+.pin-key.del{font-size:1rem;color:var(--sub);}
+.pin-key.empty{border:none;background:none;cursor:default;}
+.pin-error-msg{font-size:.78rem;color:var(--danger);font-weight:700;
+  height:18px;margin-bottom:8px;transition:opacity .2s;}
+.btn-pin-cancel{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+.pin-change-row{margin-top:10px;}
+.btn-pin-change{
+  border:none;background:none;color:var(--sub);font-size:.72rem;
+  font-family:inherit;cursor:pointer;text-decoration:underline;
+}
 .sync-status{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;margin-top:6px;opacity:.9;}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#aaa;transition:background .3s;}
 .sync-dot.ok{background:#4CAF50;}
@@ -234,6 +276,113 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
+/* ── 인원 현황 바 ── */
+.headcount-bar{
+  display:none; margin:0 14px 14px;
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:14px; padding:14px 16px;
+}
+.headcount-bar.show{display:block;}
+.hc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hc-title{font-size:.82rem;font-weight:800;color:var(--text);}
+.hc-nums{display:flex;gap:14px;}
+.hc-num-box{text-align:center;}
+.hc-num{font-size:1.3rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.hc-num.done{color:#16A34A;}
+.hc-num.pending{color:var(--danger);}
+.hc-num.total{color:var(--primary);}
+.hc-num-label{font-size:.65rem;color:var(--sub);margin-top:2px;font-weight:600;}
+.hc-progress-bg{height:8px;background:#EBE8E1;border-radius:99px;overflow:hidden;}
+.hc-progress-fill{height:100%;background:#16A34A;border-radius:99px;transition:width .4s ease;}
+.hc-status{font-size:.75rem;color:var(--sub);margin-top:6px;text-align:right;font-weight:600;}
+.hc-status.all-done{color:#16A34A;font-weight:800;}
+/* ── 관리자 인원 패널 ── */
+.headcount-setting-box{background:#F8F7F4;border-radius:12px;padding:16px;margin-bottom:12px;}
+.headcount-setting-box h3{font-size:.88rem;font-weight:800;margin-bottom:12px;}
+.hc-inp-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.hc-inp{
+  flex:1;padding:11px 14px;font-size:1.2rem;font-weight:800;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#fff;
+  color:var(--text);outline:none;text-align:center;
+}
+.hc-inp:focus{border-color:var(--primary);}
+.hc-quick-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.hc-quick-btn{
+  flex:none;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;
+  font-size:.82rem;font-weight:700;font-family:inherit;background:#fff;color:var(--sub);cursor:pointer;
+}
+.hc-quick-btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn-set-headcount{
+  width:100%;padding:12px 0;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-bottom:8px;
+}
+.btn-clear-headcount{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+
+/* ── 마감 카운트다운 바 ── */
+.deadline-bar{
+  display:none; margin:0 14px 14px;
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.10);
+}
+.deadline-bar.show{display:block;}
+.deadline-inner{
+  padding:12px 16px;
+  background:linear-gradient(135deg,#1E3A5F,#2D6A9F);
+  color:#fff;
+}
+.deadline-bar.urgent .deadline-inner{
+  background:linear-gradient(135deg,#7F1D1D,#DC2626);
+  animation:urgentPulse 1.2s infinite;
+}
+.deadline-bar.ended .deadline-inner{
+  background:linear-gradient(135deg,#374151,#6B7280);
+}
+@keyframes urgentPulse{0%,100%{opacity:1;}50%{opacity:.85;}}
+.deadline-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.deadline-label{font-size:.75rem;font-weight:700;opacity:.85;}
+.deadline-time{font-size:1.5rem;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums;}
+.deadline-progress-bg{height:5px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;}
+.deadline-progress-fill{height:100%;background:#fff;border-radius:99px;transition:width .5s linear;}
+.deadline-bar.urgent .deadline-progress-fill{background:#FFD400;}
+/* ── 관리자 마감시간 패널 ── */
+.time-setting-box{background:#F8F7F4;border-radius:12px;padding:16px;margin-bottom:12px;}
+.time-setting-box h3{font-size:.88rem;font-weight:800;margin-bottom:12px;}
+.time-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.time-row label{font-size:.82rem;font-weight:700;color:var(--sub);flex:none;width:64px;margin:0;}
+.time-inp{
+  flex:1;padding:10px 12px;font-size:1rem;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--text);
+  outline:none;text-align:center;
+}
+.time-inp:focus{border-color:var(--primary);}
+.preset-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.preset-btn{
+  flex:none;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#fff;color:var(--sub);cursor:pointer;
+}
+.preset-btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn-set-deadline{
+  width:100%;padding:12px 0;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-bottom:8px;
+}
+.btn-clear-deadline{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+.current-deadline{
+  display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:10px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.current-deadline.show{display:block;}
+.current-deadline .cd-label{font-size:.72rem;font-weight:700;color:#6366F1;margin-bottom:3px;}
+.current-deadline .cd-val{font-size:1rem;font-weight:800;color:#3730A3;}
 @media(prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
 </head>
@@ -258,7 +407,44 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   </div>
 </header>
 
-<main>
+<!-- 마감 카운트다운 바 -->
+<div class="deadline-bar" id="deadlineBar">
+  <div class="deadline-inner">
+    <div class="deadline-top">
+      <span class="deadline-label" id="deadlineLabel">⏰ 주문 마감까지</span>
+      <span style="font-size:.72rem;opacity:.75;" id="deadlineEndTime"></span>
+    </div>
+    <div class="deadline-time" id="deadlineCountdown">--:--</div>
+    <div class="deadline-progress-bg" style="margin-top:8px;">
+      <div class="deadline-progress-fill" id="deadlineProgress" style="width:100%;"></div>
+    </div>
+  </div>
+</div>
+  <!-- 인원 현황 바 -->
+  <div class="headcount-bar" id="headcountBar">
+    <div class="hc-top">
+      <span class="hc-title">👥 주문 인원 현황</span>
+      <div class="hc-nums">
+        <div class="hc-num-box">
+          <div class="hc-num done" id="hcDone">0</div>
+          <div class="hc-num-label">주문완료</div>
+        </div>
+        <div class="hc-num-box">
+          <div class="hc-num pending" id="hcPending">0</div>
+          <div class="hc-num-label">미주문</div>
+        </div>
+        <div class="hc-num-box">
+          <div class="hc-num total" id="hcTotal">0</div>
+          <div class="hc-num-label">전체</div>
+        </div>
+      </div>
+    </div>
+    <div class="hc-progress-bg">
+      <div class="hc-progress-fill" id="hcProgressFill" style="width:0%;"></div>
+    </div>
+    <div class="hc-status" id="hcStatus">주문을 기다리는 중...</div>
+  </div>
+
   <div class="session-bar">
     <div>
       <div style="font-size:.72rem;color:#6366F1;margin-bottom:2px;">현재 주문 세션</div>
@@ -335,7 +521,10 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   <div class="modal-sheet">
     <div class="admin-header">
       <h2>⚙️ 관리자 메뉴</h2>
-      <button class="btn-admin-close" id="btnAdminClose">✕</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btnChangePinFromAdmin" style="border:none;background:#EEF2FF;color:#3730A3;font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">🔑 PIN 변경</button>
+        <button class="btn-admin-close" id="btnAdminClose">✕</button>
+      </div>
     </div>
 
     <!-- DB 새로고침 안내 -->
@@ -352,6 +541,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="admin-tab active" data-atab="price">💰 가격 수정</button>
       <button class="admin-tab" data-atab="add">➕ 메뉴 추가</button>
       <button class="admin-tab" data-atab="del">🗑 메뉴 삭제</button>
+      <button class="admin-tab" data-atab="deadline">⏰ 마감시간</button>
+      <button class="admin-tab" data-atab="headcount">👥 인원설정</button>
     </div>
 
     <!-- 패널: 가격 수정 -->
@@ -426,6 +617,103 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <div id="delMenuList"></div>
     </div>
 
+    <!-- 패널: 마감시간 -->
+    <div class="admin-panel" id="panelDeadline">
+      <!-- 현재 설정된 마감시간 -->
+      <div class="current-deadline" id="currentDeadlineBox">
+        <div class="cd-label">현재 마감시간</div>
+        <div class="cd-val" id="currentDeadlineVal">-</div>
+      </div>
+
+      <div class="time-setting-box">
+        <h3>⏰ 주문 마감시간 설정</h3>
+        <!-- 빠른 설정 -->
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 설정</div>
+        <div class="preset-btns" id="presetBtns">
+          <button class="preset-btn" data-min="10">+10분</button>
+          <button class="preset-btn" data-min="20">+20분</button>
+          <button class="preset-btn" data-min="30">+30분</button>
+          <button class="preset-btn" data-min="60">+1시간</button>
+        </div>
+        <!-- 직접 입력 -->
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">시간 직접 입력</div>
+        <div class="time-row">
+          <label>마감 시각</label>
+          <input type="time" class="time-inp" id="inpDeadlineTime">
+        </div>
+        <button class="btn-set-deadline" id="btnSetDeadline">⏰ 마감시간 설정</button>
+        <button class="btn-clear-deadline" id="btnClearDeadline">마감시간 해제</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
+        마감시간이 설정되면 앱 상단에 카운트다운이 표시됩니다.<br>
+        5분 이하 남으면 빨간색으로 긴박하게 표시됩니다.
+      </div>
+    </div>
+
+    <!-- 패널: 인원설정 -->
+    <div class="admin-panel" id="panelHeadcount">
+      <!-- 현재 설정 -->
+      <div class="current-deadline" id="currentHeadcountBox">
+        <div class="cd-label">현재 설정 인원</div>
+        <div class="cd-val" id="currentHeadcountVal">-</div>
+      </div>
+
+      <div class="headcount-setting-box">
+        <h3>👥 총 주문 인원 설정</h3>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
+        <div class="hc-quick-btns">
+          <button class="hc-quick-btn" data-hc="10">10명</button>
+          <button class="hc-quick-btn" data-hc="20">20명</button>
+          <button class="hc-quick-btn" data-hc="30">30명</button>
+          <button class="hc-quick-btn" data-hc="40">40명</button>
+          <button class="hc-quick-btn" data-hc="50">50명</button>
+        </div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
+        <div class="hc-inp-row">
+          <input type="number" class="hc-inp" id="inpHeadcount" min="1" max="200" placeholder="예: 40">
+          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">명</span>
+        </div>
+        <button class="btn-set-headcount" id="btnSetHeadcount">👥 인원 설정</button>
+        <button class="btn-clear-headcount" id="btnClearHeadcount">인원 설정 해제</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
+        인원을 설정하면 주문완료 / 미주문 / 전체 현황이<br>앱 상단에 진행바로 표시됩니다.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PIN 모달 -->
+<div class="pin-modal-bg" id="pinModalBg">
+  <div class="pin-box">
+    <h3>🔒 관리자 인증</h3>
+    <div class="pin-sub" id="pinSub">4자리 PIN을 입력하세요</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
+    <div class="pin-keypad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key del" id="pinDelKey">⌫</button>
+    </div>
+    <button class="btn-pin-cancel" id="btnPinCancel">취소</button>
+    <div class="pin-change-row">
+      <button class="btn-pin-change" id="btnPinChange">PIN 변경</button>
+    </div>
   </div>
 </div>
 
@@ -724,7 +1012,15 @@ function connectRealtime(){
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
-      if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))) fetchOrders();
+      if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
+        const tbl = msg.payload?.table || msg.topic || '';
+        if(tbl.includes('session_settings')){
+          loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown(); });
+          loadHeadcount().then(()=> renderHeadcountBar());
+        } else {
+          fetchOrders();
+        }
+      }
     }catch(err){}
   };
   ws.onerror=()=>setSyncStatus('err','연결 오류');
@@ -811,6 +1107,7 @@ function renderOrders(){
   $('countBadge').textContent=people+'명';
   $('barCups').textContent=orders.length+'잔 · '+people+'명';
   $('barTotal').textContent=won(total);
+  renderHeadcountBar();
 }
 
 /* ═══════════════════════════════════════
@@ -953,14 +1250,20 @@ function openAdmin(){
   renderPriceTable();
   updateAddCatSelect();
   renderDelMenuList();
+  updateCurrentDeadlineBox();
+  updateCurrentHeadcountBox();
+  if(totalHeadcount) $('inpHeadcount').value = totalHeadcount;
+  // 시간 입력 기본값: 현재 시각 기준 30분 후
+  const d = new Date(Date.now() + 30*60*1000);
+  $('inpDeadlineTime').value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   // 마지막 업데이트 시각 표시
   const ts = parseInt(localStorage.getItem(LS_MENU_TS_KEY)||'0', 10);
   const el = $('menuLastUpdated');
   if(el){
     if(ts){
-      const d = new Date(ts);
-      el.textContent = '마지막 업데이트: ' + (d.getMonth()+1) + '/' + d.getDate() + ' ' +
-        String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      const d2 = new Date(ts);
+      el.textContent = '마지막 업데이트: ' + (d2.getMonth()+1) + '/' + d2.getDate() + ' ' +
+        String(d2.getHours()).padStart(2,'0') + ':' + String(d2.getMinutes()).padStart(2,'0');
     } else {
       el.textContent = '마지막 업데이트: 아직 없음';
     }
@@ -972,7 +1275,9 @@ function switchAdminTab(tab){
   curAdminTab=tab;
   document.querySelectorAll('.admin-tab[data-atab]').forEach(b=>b.classList.toggle('active',b.dataset.atab===tab));
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('show'));
-  $('panel'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('show');
+  const panelId = 'panel' + tab.charAt(0).toUpperCase() + tab.slice(1);
+  const panel = $(panelId);
+  if(panel) panel.classList.add('show');
 }
 
 /* ═══════════════════════════════════════
@@ -1060,9 +1365,129 @@ $('btnOpenReceipt').addEventListener('click',openReceipt);
 $('btnCopy').addEventListener('click',copyReceipt);
 $('btnCloseReceipt').addEventListener('click',()=>$('modalReceipt').classList.remove('show'));
 $('modalReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
-// 관리자
-$('btnAdminOpen').addEventListener('click',openAdmin);
+/* ═══════════════════════════════════════
+   PIN 잠금
+═══════════════════════════════════════ */
+const LS_PIN_KEY = 'coffeeAdminPin_v1';
+const DEFAULT_PIN = '0119';
+let pinBuffer = '';
+let pinMode = 'verify'; // 'verify' | 'set_new' | 'confirm_new'
+let pinNewTemp = '';
+
+function getPin(){ return localStorage.getItem(LS_PIN_KEY) || DEFAULT_PIN; }
+function savePin(p){ localStorage.setItem(LS_PIN_KEY, p); }
+
+function openPinModal(mode = 'verify'){
+  pinMode = mode; pinBuffer = ''; pinNewTemp = '';
+  renderPinDots();
+  $('pinErrorMsg').textContent = '';
+  if(mode === 'verify'){
+    $('pinSub').textContent = '4자리 PIN을 입력하세요';
+  } else if(mode === 'set_new'){
+    $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
+  }
+  $('pinModalBg').classList.add('show');
+}
+function closePinModal(){
+  pinBuffer = ''; pinNewTemp = '';
+  $('pinModalBg').classList.remove('show');
+  renderPinDots();
+  $('pinErrorMsg').textContent = '';
+}
+
+function renderPinDots(){
+  for(let i=0;i<4;i++){
+    const dot = $('pd'+i);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('error');
+  }
+}
+
+function pinShakeError(msg){
+  for(let i=0;i<4;i++) $('pd'+i).classList.add('error');
+  $('pinErrorMsg').textContent = msg;
+  setTimeout(()=>{
+    pinBuffer = '';
+    renderPinDots();
+  }, 600);
+}
+
+function handlePinInput(k){
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  renderPinDots();
+  if(pinBuffer.length === 4){
+    setTimeout(()=> processPinComplete(), 150);
+  }
+}
+
+function handlePinDel(){
+  if(pinBuffer.length > 0){
+    pinBuffer = pinBuffer.slice(0, -1);
+    renderPinDots();
+    $('pinErrorMsg').textContent = '';
+  }
+}
+
+function processPinComplete(){
+  if(pinMode === 'verify'){
+    if(pinBuffer === getPin()){
+      closePinModal();
+      openAdmin();
+    } else {
+      pinShakeError('PIN이 틀렸습니다');
+    }
+  } else if(pinMode === 'set_new'){
+    pinNewTemp = pinBuffer;
+    pinBuffer = '';
+    pinMode = 'confirm_new';
+    $('pinSub').textContent = '새 PIN을 한번 더 입력하세요';
+    renderPinDots();
+    $('pinErrorMsg').textContent = '';
+  } else if(pinMode === 'confirm_new'){
+    if(pinBuffer === pinNewTemp){
+      savePin(pinBuffer);
+      closePinModal();
+      toast('✅ PIN이 변경되었습니다');
+    } else {
+      pinNewTemp = '';
+      pinMode = 'set_new';
+      pinShakeError('PIN이 일치하지 않습니다. 다시 입력하세요');
+      setTimeout(()=>{
+        $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
+      }, 700);
+    }
+  }
+}
+
+// PIN 키패드 이벤트
+document.querySelectorAll('.pin-key[data-k]').forEach(btn=>{
+  btn.addEventListener('click', ()=> handlePinInput(btn.dataset.k));
+});
+$('pinDelKey').addEventListener('click', handlePinDel);
+$('btnPinCancel').addEventListener('click', closePinModal);
+$('pinModalBg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closePinModal(); });
+$('btnPinChange').addEventListener('click', ()=>{
+  // 현재 PIN 먼저 확인 후 변경 모드
+  closePinModal();
+  setTimeout(()=> openPinModal('set_new'), 200);
+});
+
+// 키보드 입력 지원
+document.addEventListener('keydown', e=>{
+  if(!$('pinModalBg').classList.contains('show')) return;
+  if(e.key >= '0' && e.key <= '9') handlePinInput(e.key);
+  else if(e.key === 'Backspace') handlePinDel();
+  else if(e.key === 'Escape') closePinModal();
+});
+
+// 관리자 버튼 → PIN 먼저
+$('btnAdminOpen').addEventListener('click', ()=> openPinModal('verify'));
 $('btnAdminClose').addEventListener('click',closeAdmin);
+$('btnChangePinFromAdmin').addEventListener('click',()=>{
+  closeAdmin();
+  setTimeout(()=> openPinModal('set_new'), 200);
+});
 $('modalAdmin').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeAdmin(); });
 document.querySelectorAll('.admin-tab[data-atab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.atab)));
 // 관리자 브랜드 탭 (가격)
@@ -1086,6 +1511,265 @@ $('addBrand').addEventListener('change',updateAddCatSelect);
 $('btnAddMenu').addEventListener('click',addMenu);
 
 /* ═══════════════════════════════════════
+   총 주문 인원 설정 (Supabase 연동)
+═══════════════════════════════════════ */
+let totalHeadcount = 0; // 0 = 미설정
+
+async function loadHeadcount(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&select=headcount`
+    );
+    totalHeadcount = data[0]?.headcount || 0;
+  }catch(e){
+    console.warn('[인원] DB 로드 실패:', e.message);
+    totalHeadcount = 0;
+  }
+}
+async function saveHeadcount(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: sessionId, brand,
+        headcount: totalHeadcount,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[인원] DB 저장 실패:', e.message); }
+}
+async function setHeadcount(n){
+  totalHeadcount = n;
+  await saveHeadcount();
+  renderHeadcountBar();
+  updateCurrentHeadcountBox();
+}
+async function clearHeadcount(){
+  totalHeadcount = 0;
+  try{
+    await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
+      { method: 'PATCH',
+        headers: {...HEADERS, 'Prefer': 'return=representation'},
+        body: JSON.stringify({headcount: 0}) }
+    );
+  }catch(e){ console.warn('[인원] DB 초기화 실패:', e.message); }
+  $('headcountBar').classList.remove('show');
+  updateCurrentHeadcountBox();
+}
+
+function renderHeadcountBar(){
+  const bar = $('headcountBar');
+  if(!totalHeadcount){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+
+  const done = new Set(orders.map(o => o.name)).size;
+  const pending = Math.max(0, totalHeadcount - done);
+  const pct = Math.min(100, Math.round((done / totalHeadcount) * 100));
+
+  $('hcDone').textContent = done;
+  $('hcPending').textContent = pending;
+  $('hcTotal').textContent = totalHeadcount;
+  $('hcProgressFill').style.width = pct + '%';
+
+  const status = $('hcStatus');
+  if(pending === 0){
+    status.textContent = '✅ 전원 주문 완료!';
+    status.className = 'hc-status all-done';
+    $('hcProgressFill').style.background = '#16A34A';
+  } else {
+    status.textContent = `${pending}명 아직 주문 안 함 (${pct}% 완료)`;
+    status.className = 'hc-status';
+    $('hcProgressFill').style.background = pct >= 70 ? '#16A34A' : pct >= 40 ? '#F59E0B' : 'var(--primary)';
+  }
+}
+
+function updateCurrentHeadcountBox(){
+  const box = $('currentHeadcountBox');
+  if(!totalHeadcount){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  $('currentHeadcountVal').textContent = `총 ${totalHeadcount}명`;
+}
+
+// 관리자 패널 이벤트
+document.querySelectorAll('.hc-quick-btn').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const n = parseInt(btn.dataset.hc, 10);
+    await setHeadcount(n);
+    closeAdmin();
+    toast(`👥 총 ${n}명으로 설정했습니다`);
+  });
+});
+
+$('btnSetHeadcount').addEventListener('click', async ()=>{
+  const n = parseInt($('inpHeadcount').value, 10);
+  if(!n || n < 1){ toast('인원 수를 입력해주세요'); return; }
+  if(n > 200){ toast('200명 이하로 입력해주세요'); return; }
+  await setHeadcount(n);
+  closeAdmin();
+  toast(`👥 총 ${n}명으로 설정했습니다`);
+});
+
+$('btnClearHeadcount').addEventListener('click', async ()=>{
+  await clearHeadcount();
+  toast('인원 설정이 해제되었습니다');
+});
+
+/* ═══════════════════════════════════════
+   마감시간 카운트다운 (Supabase 연동)
+═══════════════════════════════════════ */
+let deadlineTs = 0;       // 마감 시각 (타임스탬프 ms)
+let deadlineStartTs = 0;  // 설정 시작 시각 (진행바 계산용)
+let countdownTimer = null;
+
+async function loadDeadline(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&select=deadline_ts,deadline_start_ts`
+    );
+    deadlineTs = data[0]?.deadline_ts || 0;
+    deadlineStartTs = data[0]?.deadline_start_ts || 0;
+  }catch(e){
+    console.warn('[마감] DB 로드 실패:', e.message);
+    deadlineTs = 0; deadlineStartTs = 0;
+  }
+}
+async function saveDeadline(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: sessionId, brand,
+        deadline_ts: deadlineTs,
+        deadline_start_ts: deadlineStartTs,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[마감] DB 저장 실패:', e.message); }
+}
+async function clearDeadlineData(){
+  deadlineTs=0; deadlineStartTs=0;
+  try{
+    await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
+      { method: 'PATCH',
+        headers: {...HEADERS, 'Prefer': 'return=representation'},
+        body: JSON.stringify({deadline_ts: 0, deadline_start_ts: 0}) }
+    );
+  }catch(e){ console.warn('[마감] DB 초기화 실패:', e.message); }
+}
+
+async function setDeadline(endTs){
+  deadlineTs = endTs;
+  deadlineStartTs = Date.now();
+  await saveDeadline();
+  startCountdown();
+  updateCurrentDeadlineBox();
+}
+
+function startCountdown(){
+  if(countdownTimer) clearInterval(countdownTimer);
+  tickCountdown();
+  countdownTimer = setInterval(tickCountdown, 1000);
+}
+
+function tickCountdown(){
+  const bar = $('deadlineBar');
+  if(!deadlineTs){ bar.classList.remove('show'); return; }
+
+  const now = Date.now();
+  const remaining = deadlineTs - now; // ms
+
+  if(remaining <= 0){
+    // 마감됨
+    bar.className = 'deadline-bar show ended';
+    $('deadlineLabel').textContent = '🔴 주문 마감';
+    $('deadlineCountdown').textContent = '마감됨';
+    $('deadlineEndTime').textContent = '';
+    $('deadlineProgress').style.width = '0%';
+    clearInterval(countdownTimer);
+    return;
+  }
+
+  bar.classList.add('show');
+
+  const totalMs = deadlineTs - deadlineStartTs;
+  const pct = Math.max(0, Math.min(100, (remaining / totalMs) * 100));
+
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const timeStr = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+
+  // 5분 이하면 긴박 모드
+  if(remaining <= 5 * 60 * 1000){
+    bar.className = 'deadline-bar show urgent';
+    $('deadlineLabel').textContent = '⚠️ 곧 마감!';
+  } else {
+    bar.className = 'deadline-bar show';
+    $('deadlineLabel').textContent = '⏰ 주문 마감까지';
+  }
+
+  $('deadlineCountdown').textContent = timeStr;
+  $('deadlineProgress').style.width = pct + '%';
+
+  // 마감 시각 표시 (오전/오후 HH:MM)
+  const endD = new Date(deadlineTs);
+  const hh = endD.getHours(), mm = endD.getMinutes();
+  const ampm = hh < 12 ? '오전' : '오후';
+  const hh12 = hh % 12 || 12;
+  $('deadlineEndTime').textContent = `마감 ${ampm} ${hh12}:${String(mm).padStart(2,'0')}`;
+}
+
+function updateCurrentDeadlineBox(){
+  const box = $('currentDeadlineBox');
+  if(!deadlineTs){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const d = new Date(deadlineTs);
+  const hh=d.getHours(), mm=d.getMinutes();
+  const ampm=hh<12?'오전':'오후';
+  const hh12=hh%12||12;
+  $('currentDeadlineVal').textContent = `${ampm} ${hh12}:${String(mm).padStart(2,'0')} (${todayStr()})`;
+}
+
+// 관리자 - 마감시간 패널 이벤트
+// 프리셋 (+N분)
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const min = parseInt(btn.dataset.min, 10);
+    const endTs = Date.now() + min * 60 * 1000;
+    await setDeadline(endTs);
+    closeAdmin();
+    toast(`⏰ ${min}분 후 마감으로 설정했습니다`);
+  });
+});
+
+// 시간 직접 입력
+$('btnSetDeadline').addEventListener('click', async ()=>{
+  const val = $('inpDeadlineTime').value; // "HH:MM"
+  if(!val){ toast('마감 시각을 입력해주세요'); return; }
+  const [hh, mm] = val.split(':').map(Number);
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+  // 이미 지난 시각이면 다음날로
+  if(end.getTime() <= Date.now()) end.setDate(end.getDate()+1);
+  await setDeadline(end.getTime());
+  closeAdmin();
+  const ampm=hh<12?'오전':'오후'; const hh12=hh%12||12;
+  toast(`⏰ ${ampm} ${hh12}:${String(mm).padStart(2,'0')} 마감으로 설정했습니다`);
+});
+
+// 해제
+$('btnClearDeadline').addEventListener('click',()=>{
+  await clearDeadlineData();
+  if(countdownTimer) clearInterval(countdownTimer);
+  $('deadlineBar').classList.remove('show');
+  updateCurrentDeadlineBox();
+  toast('마감시간이 해제되었습니다');
+});
+
+/* ═══════════════════════════════════════
    초기 실행
 ═══════════════════════════════════════ */
 loadSession();
@@ -1096,6 +1780,14 @@ renderCats();
 renderMenuSelect();
 fetchOrders();
 connectRealtime();
+
+// 마감시간 & 인원 DB 로드 후 초기화
+(async()=>{
+  await Promise.all([loadDeadline(), loadHeadcount()]);
+  if(deadlineTs && deadlineTs > Date.now()) startCountdown();
+  else if(deadlineTs) tickCountdown();
+  renderHeadcountBar();
+})();
 
 // DB에서 최신 메뉴 로드 (캐시 60분)
 fetchMenusFromDB();
