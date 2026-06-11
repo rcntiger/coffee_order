@@ -1,0 +1,43 @@
+name: ☕ 커피 메뉴 자동 업데이트
+
+on:
+  # 매일 새벽 2시 (KST) = UTC 17:00 전날
+  schedule:
+    - cron: '0 17 * * *'
+
+  # 수동 실행 버튼 (GitHub Actions 탭에서 바로 실행 가능)
+  workflow_dispatch:
+    inputs:
+      brand:
+        description: '특정 브랜드만 실행 (paik/mega/compose/all)'
+        required: false
+        default: 'all'
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 패키지 설치
+        run: |
+          pip install requests beautifulsoup4 lxml
+
+      - name: 🕷️ 메뉴 크롤링 & Supabase 업데이트
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          CRAWL_BRAND: ${{ github.event.inputs.brand || 'all' }}
+        run: python crawl_menus.py
+
+      - name: 📊 실행 결과 요약
+        if: always()
+        run: echo "크롤링 완료 - $(date '+%Y-%m-%d %H:%M KST')"
