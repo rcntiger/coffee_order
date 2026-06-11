@@ -137,6 +137,18 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   cursor:pointer;letter-spacing:-.01em;
 }
 .btn-add:disabled{opacity:.6;cursor:not-allowed;}
+.setup-required-banner{
+  display:none;background:#FFF7ED;border:1.5px solid #FED7AA;
+  border-radius:12px;padding:13px 16px;margin-bottom:14px;
+  font-size:.85rem;color:#9A3412;font-weight:600;line-height:1.5;
+  text-align:center;
+}
+.setup-required-banner.show{display:block;}
+.setup-required-banner .banner-btn{
+  display:inline-block;margin-top:8px;padding:7px 16px;
+  border:none;border-radius:8px;background:#EA580C;color:#fff;
+  font-size:.82rem;font-weight:800;font-family:inherit;cursor:pointer;
+}
 .btn-add:active:not(:disabled){transform:scale(.99);}
 .session-bar{
   display:flex;align-items:center;justify-content:space-between;
@@ -499,6 +511,11 @@ body.modal-open{overflow:hidden;}
     <button class="btn-new-session" id="btnNewSession">🔄 새 세션</button>
   </div>
 
+  <div class="setup-required-banner" id="setupBanner">
+    🏪 주문받을 가게를 먼저 선택해주세요<br>
+    <small style="font-weight:500;opacity:.85;">마감시간·잔수는 선택사항입니다</small><br>
+    <button class="banner-btn" id="btnBannerOpenSetup">📋 주문설정 열기</button>
+  </div>
   <section class="card">
     <h2>주문 추가</h2>
     <label for="inpName">이름</label>
@@ -1130,7 +1147,7 @@ function connectRealtime(){
         if(tbl.includes('session_settings')){
           loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else tickCountdown(); });
           loadHeadcount().then(()=> renderHeadcountBar());
-          loadStoreLock();
+          loadStoreLock().then(applySetupGuard);
         } else {
           fetchOrders();
         }
@@ -1714,6 +1731,18 @@ $('modalReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e
    PIN 잠금
 ═══════════════════════════════════════ */
 const LS_PIN_KEY = 'coffeeAdminPin_v1';
+function isSetupDone(){
+  // 가게가 1개 이상 선택(저장)된 경우 완료
+  return lockedBrands.length > 0;
+}
+function applySetupGuard(){
+  const done = isSetupDone();
+  const btn = $('btnAdd');
+  const banner = $('setupBanner');
+  btn.disabled = !done;
+  btn.title = done ? '' : '가게를 먼저 선택해주세요';
+  banner.classList.toggle('show', !done);
+}
 const DEFAULT_PIN = '0119';
 let pinBuffer = '';
 let pinMode = 'verify'; // 'verify' | 'set_new' | 'confirm_new'
@@ -1837,6 +1866,9 @@ document.addEventListener('keydown', e=>{
   else if(e.key === 'Escape') closePinModal();
 });
 
+// 배너 → 주문설정 바로 열기
+$('btnBannerOpenSetup').addEventListener('click', ()=> openPinModal('verify', 'order'));
+
 // 관리자 버튼 → PIN 먼저
 // 주문설정 버튼
 $('btnOrderOpen').addEventListener('click', ()=> openPinModal('verify', 'order'));
@@ -1870,6 +1902,7 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
       await clearHeadcount();
     }
 
+    applySetupGuard();
     closeOrderModal();
     toast('✅ 주문설정이 저장되었습니다');
   }catch(e){
@@ -2324,6 +2357,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 인원 현황 바
   renderHeadcountBar();
+
+  // 주문설정 완료 여부 반영
+  applySetupGuard();
 
   // 실시간 WebSocket
   connectRealtime();
