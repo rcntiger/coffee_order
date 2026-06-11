@@ -1385,7 +1385,7 @@ let tmpDeadlineTs = 0;  // 마감시각 (0=없음)
 let tmpHeadcount = 0;   // 주문잔수 (0=없음)
 
 function initTempSettings(){
-  tmpBrands = [...lockedBrands];
+  tmpBrands = [...new Set(lockedBrands)];
   tmpDeadlineTs = deadlineTs;
   tmpHeadcount = totalHeadcount;
   // 가게 카드 선택 상태
@@ -2046,7 +2046,7 @@ async function loadStoreLock(){
       `session_settings?session_id=eq.__global__&brand=eq.__global__&select=locked_brand`
     );
     const raw = rows[0]?.locked_brand || '';
-    lockedBrands = raw ? raw.split(',').filter(b=>BRANDS[b]) : [];
+    lockedBrands = raw ? [...new Set(raw.split(',').filter(b=>BRANDS[b]))] : [];
   }catch(e){
     console.warn('[가게] DB 로드 실패:', e.message);
     lockedBrands = [];
@@ -2131,7 +2131,14 @@ function renderStorePanelSelection(){
 // 가게 카드 토글 클릭 (다중선택)
 document.querySelectorAll('.store-card').forEach(card=>{
   card.addEventListener('click',()=>{
-    card.classList.toggle('selected');
+    const b = card.dataset.store;
+    const already = card.classList.contains('selected');
+    // 전체 카드 일괄 재렌더 (data 기준, DOM 기준 X)
+    if(already){
+      card.classList.remove('selected');
+    } else {
+      card.classList.add('selected');
+    }
     if(typeof updateOrderSummary === 'function') updateOrderSummary();
   });
 });
