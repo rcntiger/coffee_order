@@ -12,6 +12,8 @@ on:
         description: '특정 브랜드만 실행 (paik/mega/compose/all)'
         required: false
         default: 'all'
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ← 이 줄 추가
 
 jobs:
   crawl:
