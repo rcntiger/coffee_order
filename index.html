@@ -349,6 +349,46 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 .deadline-progress-bg{height:5px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;}
 .deadline-progress-fill{height:100%;background:#fff;border-radius:99px;transition:width .5s linear;}
 .deadline-bar.urgent .deadline-progress-fill{background:#FFD400;}
+/* ── 가게설정 ── */
+.brand-locked .brand-tab{ pointer-events:none; opacity:.55; }
+.brand-locked .brand-tab.active{ opacity:1; }
+.brand-lock-badge{
+  display:none; font-size:.68rem; font-weight:700;
+  background:rgba(255,255,255,.2); color:#fff;
+  padding:2px 8px; border-radius:99px; margin-left:6px; vertical-align:2px;
+}
+.brand-locked .brand-lock-badge{ display:inline; }
+.store-card{
+  border:2.5px solid var(--line); border-radius:14px; padding:16px 14px;
+  margin-bottom:10px; cursor:pointer; transition:all .15s; background:#fff;
+  display:flex; align-items:center; gap:14px;
+}
+.store-card:hover{ border-color:var(--primary); background:#F5F8FF; }
+.store-card.selected{ border-color:var(--primary); background:#EEF4FF; }
+.store-icon{ font-size:2rem; flex:none; }
+.store-info{ flex:1; }
+.store-name{ font-size:.95rem; font-weight:800; }
+.store-desc{ font-size:.75rem; color:var(--sub); margin-top:2px; }
+.store-check{ flex:none; font-size:1.2rem; opacity:0; transition:opacity .15s; }
+.store-card.selected .store-check{ opacity:1; }
+.btn-set-store{
+  width:100%; padding:13px 0; border:none; border-radius:12px;
+  background:var(--primary); color:#fff; font-size:.95rem; font-weight:800;
+  font-family:inherit; cursor:pointer; margin-top:4px; margin-bottom:8px;
+}
+.btn-unlock-store{
+  width:100%; padding:11px 0; border:1.5px solid var(--line); border-radius:12px;
+  background:#fff; color:var(--sub); font-size:.88rem; font-weight:700;
+  font-family:inherit; cursor:pointer;
+}
+.current-store-box{
+  display:none; background:#EEF4FF; border:1px solid #C7D2FE;
+  border-radius:10px; padding:12px 14px; margin-bottom:12px;
+}
+.current-store-box.show{ display:flex; align-items:center; gap:10px; }
+.current-store-box .cs-icon{ font-size:1.5rem; }
+.current-store-box .cs-info .cs-label{ font-size:.72rem; font-weight:700; color:#6366F1; }
+.current-store-box .cs-info .cs-val{ font-size:1rem; font-weight:800; color:#3730A3; }
 /* ── 관리자 마감시간 패널 ── */
 .time-setting-box{background:#F8F7F4;border-radius:12px;padding:16px;margin-bottom:12px;}
 .time-setting-box h3{font-size:.88rem;font-weight:800;margin-bottom:12px;}
@@ -400,10 +440,10 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <span id="syncText">연결 중...</span>
     </div>
   </div>
-  <div class="brand-tabs">
-    <button class="brand-tab active" data-brand="paik">빽다방</button>
-    <button class="brand-tab" data-brand="mega">메가커피</button>
-    <button class="brand-tab" data-brand="compose">컴포즈</button>
+  <div class="brand-tabs" id="brandTabsWrap">
+    <button class="brand-tab active" data-brand="paik">빽다방<span class="brand-lock-badge">🔒</span></button>
+    <button class="brand-tab" data-brand="mega">메가커피<span class="brand-lock-badge">🔒</span></button>
+    <button class="brand-tab" data-brand="compose">컴포즈<span class="brand-lock-badge">🔒</span></button>
   </div>
 </header>
 
@@ -543,6 +583,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="admin-tab" data-atab="del">🗑 메뉴 삭제</button>
       <button class="admin-tab" data-atab="deadline">⏰ 마감시간</button>
       <button class="admin-tab" data-atab="headcount">👥 인원설정</button>
+      <button class="admin-tab" data-atab="store">🏪 가게설정</button>
     </div>
 
     <!-- 패널: 가격 수정 -->
@@ -679,6 +720,47 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <div style="font-size:.72rem;color:var(--sub);text-align:center;line-height:1.6;">
         인원을 설정하면 주문완료 / 미주문 / 전체 현황이<br>앱 상단에 진행바로 표시됩니다.
       </div>
+    </div>
+    <!-- 패널: 가게설정 -->
+    <div class="admin-panel" id="panelStore">
+      <!-- 현재 설정 -->
+      <div class="current-store-box" id="currentStoreBox">
+        <div class="cs-icon" id="currentStoreIcon">☕</div>
+        <div class="cs-info">
+          <div class="cs-label">현재 선택된 가게</div>
+          <div class="cs-val" id="currentStoreVal">-</div>
+        </div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:10px;">가게를 선택하면 브랜드 탭이 잠겨 일반 사용자가 변경할 수 없습니다.</div>
+
+      <div class="store-card" data-store="paik" id="storeCardPaik">
+        <div class="store-icon">🐔</div>
+        <div class="store-info">
+          <div class="store-name">빽다방</div>
+          <div class="store-desc">백종원의 빽다방 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+      <div class="store-card" data-store="mega" id="storeCardMega">
+        <div class="store-icon">☕</div>
+        <div class="store-info">
+          <div class="store-name">메가커피</div>
+          <div class="store-desc">메가MGC커피 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+      <div class="store-card" data-store="compose" id="storeCardCompose">
+        <div class="store-icon">🎵</div>
+        <div class="store-info">
+          <div class="store-name">컴포즈커피</div>
+          <div class="store-desc">컴포즈커피 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+
+      <button class="btn-set-store" id="btnSetStore">🏪 이 가게로 설정 (잠금)</button>
+      <button class="btn-unlock-store" id="btnUnlockStore">🔓 가게 잠금 해제</button>
     </div>
 
   </div>
@@ -1254,6 +1336,8 @@ function openAdmin(){
   renderDelMenuList();
   updateCurrentDeadlineBox();
   updateCurrentHeadcountBox();
+  updateCurrentStoreBox();
+  renderStorePanelSelection();
   if(totalHeadcount) $('inpHeadcount').value = totalHeadcount;
   // 시간 입력 기본값: 현재 시각 기준 30분 후
   const d = new Date(Date.now() + 30*60*1000);
@@ -1344,6 +1428,7 @@ function toast(msg){
 document.querySelectorAll('.brand-tab').forEach(btn=>{
   btn.addEventListener('click',async()=>{
     const b=btn.dataset.brand; if(b===brand) return;
+    if(lockedBrand){ toast('🔒 관리자가 가게를 고정했습니다'); return; }
     if(orders.length&&!confirm('브랜드를 '+BRANDS[b].label+'(으)로 바꾸면\n현재 세션 주문이 보이지 않게 됩니다.\n계속할까요?')) return;
     brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect(); await fetchOrders();
   });
@@ -1619,6 +1704,123 @@ $('btnClearHeadcount').addEventListener('click', async ()=>{
 });
 
 /* ═══════════════════════════════════════
+   가게설정 (브랜드 잠금) — Supabase 연동
+═══════════════════════════════════════ */
+let lockedBrand = ''; // '' = 잠금 없음
+
+const STORE_META = {
+  paik:    { name:'빽다방',    icon:'🐔' },
+  mega:    { name:'메가커피',  icon:'☕' },
+  compose: { name:'컴포즈커피', icon:'🎵' },
+};
+
+async function loadStoreLock(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.any.(paik,mega,compose)&select=locked_brand&limit=1`
+    );
+    // session_settings는 session_id+brand PK라 전체 세션에서 locked_brand 가져옴
+    // 별도 글로벌 설정 row로 session_id='__global__' 사용
+    const global = await sbFetch(
+      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=locked_brand`
+    );
+    lockedBrand = global[0]?.locked_brand || '';
+  }catch(e){
+    console.warn('[가게] DB 로드 실패:', e.message);
+    lockedBrand = '';
+  }
+  if(lockedBrand && BRANDS[lockedBrand]){
+    brand = lockedBrand;
+    saveSession();
+  }
+  applyStoreLock();
+}
+
+async function saveStoreLock(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: '__global__',
+        brand: '__global__',
+        locked_brand: lockedBrand,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[가게] DB 저장 실패:', e.message); }
+}
+
+function applyStoreLock(){
+  const wrap = $('brandTabsWrap');
+  if(lockedBrand){
+    wrap.classList.add('brand-locked');
+  } else {
+    wrap.classList.remove('brand-locked');
+  }
+}
+
+async function setStoreLock(b){
+  lockedBrand = b;
+  await saveStoreLock();
+  brand = b; curCat='전체'; saveSession();
+  applyBrandTheme(); renderCats(); renderMenuSelect();
+  applyStoreLock();
+  updateCurrentStoreBox();
+}
+
+async function clearStoreLock(){
+  lockedBrand = '';
+  await saveStoreLock();
+  applyStoreLock();
+  updateCurrentStoreBox();
+}
+
+function updateCurrentStoreBox(){
+  const box = $('currentStoreBox');
+  if(!lockedBrand){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const m = STORE_META[lockedBrand];
+  $('currentStoreIcon').textContent = m.icon;
+  $('currentStoreVal').textContent = m.name;
+}
+
+let selectedStoreTemp = ''; // 패널 내 선택 중인 브랜드
+
+function renderStorePanelSelection(){
+  selectedStoreTemp = lockedBrand || brand;
+  ['paik','mega','compose'].forEach(b=>{
+    $('storeCard'+b.charAt(0).toUpperCase()+b.slice(1))
+      .classList.toggle('selected', b === selectedStoreTemp);
+  });
+  updateCurrentStoreBox();
+}
+
+// 가게 카드 클릭
+document.querySelectorAll('.store-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    selectedStoreTemp = card.dataset.store;
+    document.querySelectorAll('.store-card').forEach(c=>
+      c.classList.toggle('selected', c.dataset.store === selectedStoreTemp));
+  });
+});
+
+// 설정 저장
+$('btnSetStore').addEventListener('click', async ()=>{
+  if(!selectedStoreTemp){ toast('가게를 선택해주세요'); return; }
+  await setStoreLock(selectedStoreTemp);
+  closeAdmin();
+  toast(`🏪 ${STORE_META[selectedStoreTemp].name}으로 설정됐습니다 (잠금)`);
+});
+
+// 잠금 해제
+$('btnUnlockStore').addEventListener('click', async ()=>{
+  await clearStoreLock();
+  toast('🔓 가게 잠금이 해제되었습니다');
+  renderStorePanelSelection();
+});
+
+/* ═══════════════════════════════════════
    마감시간 카운트다운 (Supabase 연동)
 ═══════════════════════════════════════ */
 let deadlineTs = 0;       // 마감 시각 (타임스탬프 ms)
@@ -1787,6 +1989,7 @@ $('btnClearDeadline').addEventListener('click', async ()=>{
     fetchOrders(),
     loadDeadline(),
     loadHeadcount(),
+    loadStoreLock(),
     fetchMenusFromDB(),
   ]);
 
