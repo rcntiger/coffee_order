@@ -451,19 +451,23 @@ body.brand-compose .welcome-screen{background:#5C3A21;}
 /* ── 설정 페이지 (mode-setup) ── */
 /* team 파라미터 없으면 즉시 앱 숨김 (깜빡임 방지) */
 html.mode-setup-pre header,
-html.mode-setup-pre main,
 html.mode-setup-pre .bottom-bar,
 html.mode-setup-pre .deadline-bar,
 html.mode-setup-pre .headcount-bar,
-html.mode-setup-pre .welcome-screen{ display:none !important; }
+html.mode-setup-pre .welcome-screen,
+html.mode-setup-pre section,
+html.mode-setup-pre .my-orders-wrap,
+html.mode-setup-pre .notice{ display:none !important; }
 html.mode-setup-pre .setup-page{ display:block; }
 
 body.mode-setup header,
-body.mode-setup main,
 body.mode-setup .bottom-bar,
 body.mode-setup .deadline-bar,
 body.mode-setup .headcount-bar,
-body.mode-setup .welcome-screen{ display:none !important; }
+body.mode-setup .welcome-screen,
+body.mode-setup section,
+body.mode-setup .my-orders-wrap,
+body.mode-setup .notice{ display:none !important; }
 .setup-page{ display:none; }
 body.mode-setup .setup-page{ display:block; }
 
@@ -492,7 +496,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
 .setup-summary-row:last-child{border-bottom:none;}
 .setup-summary-label{color:var(--sub);font-weight:600;}
 .setup-summary-val{font-weight:800;}
-.setup-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:10;}
+.setup-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:8px;}
 .btn-setup-done{width:100%;padding:15px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;}
 .btn-setup-done:disabled{opacity:.45;cursor:not-allowed;}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
@@ -694,7 +698,8 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
   </div>
   <div class="setup-bottom">
-    <button class="btn-setup-done" id="setupBtnDone" disabled>설정을 완료해주세요</button>
+    <button id="setupBtnNewOrder" style="flex:none;padding:15px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--sub);font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
+    <button class="btn-setup-done" id="setupBtnDone" disabled style="flex:1;">설정을 완료해주세요</button>
   </div>
 </div>
 
@@ -1848,6 +1853,36 @@ $('setupBtnAddTeam').addEventListener('click', async ()=>{
 });
 $('setupInpTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') $('setupBtnAddTeam').click(); });
 $('setupBtnSettings').addEventListener('click',()=>openPinModal('verify','order'));
+
+// 새로운 주문 버튼
+$('setupBtnNewOrder').addEventListener('click', async ()=>{
+  if(!confirm('현재 주문 데이터를 모두 초기화하고 새로운 주문을 시작할까요?\n(기존 데이터는 DB에 남아있습니다)')) return;
+
+  const btn = $('setupBtnNewOrder');
+  btn.disabled = true; btn.textContent = '초기화 중...';
+
+  try{
+    // 설정 클리어
+    await clearStoreLock();
+    await clearDeadlineData();
+    if(countdownTimer) clearInterval(countdownTimer);
+    await clearHeadcount();
+    maxPricePerOrder = 0; await savePriceLimit();
+
+    // 회차 증가
+    sessionCount = (sessionCount||1) + 1;
+    sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
+    saveSession();
+
+    // 설정 요약 초기화
+    updateSetupSummary();
+    toast('🔄 새로운 주문이 시작됩니다 ('+sessionCount+'회차)');
+  }catch(e){
+    toast('초기화 실패: '+e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = '🔄 새 주문';
+  }
+});
 $('setupBtnDone').addEventListener('click',()=>{
   if(!lockedBrands.length){ toast('⚠️ 주문설정에서 가게를 선택해주세요'); return; }
   document.body.classList.remove('mode-setup');
