@@ -1520,6 +1520,10 @@ function loadTeamFromURL(){
   const m = params.get('mode');
   if(m === 'order') orderMode = 'order';
   else orderMode = 'admin';
+  // cfg 파라미터 파싱
+  const c = params.get('cfg');
+  if(c) cfgId = c;
+
   if(!teamName){
     pageMode = 'setup';
     document.body.classList.add('mode-setup');
@@ -1897,6 +1901,15 @@ document.addEventListener('click', async (e)=>{
   if(e.target.id === 'setupBtnAddTeam' || e.target.closest('#setupBtnAddTeam')){
     const name = $('setupInpTeam').value.trim();
     if(!name){ toast('팀 이름을 입력해주세요'); return; }
+    // 가게 설정 필수 확인
+    if(!lockedBrands.length){
+      toast('⚠️ 먼저 주문설정에서 가게를 선택해주세요');
+      document.getElementById('setupBtnSettings')?.click();
+      return;
+    }
+    // 링크 생성 전 cfgId 반드시 초기화
+    if(!setupCfgId) await initSetupCfgId();
+    cfgId = setupCfgId;
     const list = await loadTeamList();
     if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
     list.push(name); await saveTeamList(list);
