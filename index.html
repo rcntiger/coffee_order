@@ -527,7 +527,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 
 <header>
   <div class="header-row">
-    <h1>☕ 주문 취합</h1>
+    <h1>☕ 주문 취합 <span id="teamBadge" style="font-size:.75rem;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:99px;vertical-align:2px;display:none;"></span></h1>
     <div style="display:flex;gap:6px;"><button class="btn-admin-open" id="btnOrderOpen">📋 주문설정</button><button class="btn-admin-open" id="btnMenuOpen">🍽 메뉴수정</button></div>
   </div>
   <div class="header-row" style="margin-top:6px;align-items:center;">
@@ -703,18 +703,20 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <!-- 현재 설정 요약 -->
     <div id="orderSettingSummary" style="background:#F8F7F4;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.8;">
       <div style="font-weight:800;margin-bottom:4px;">현재 설정</div>
+      <div id="summaryTeam">🔗 팀: <span style="color:var(--sub);">전체 공용</span></div>
       <div id="summaryStore">🏪 가게: <span style="color:var(--sub);">설정 없음</span></div>
       <div id="summaryDeadline">⏰ 마감: <span style="color:var(--sub);">설정 없음</span></div>
-      <div id="summaryHeadcount">📋 주문잔수: <span style="color:var(--sub);">설정 없음</span></div>
-      <div id="summaryPriceLimit">💰 주문가격: <span style="color:var(--sub);">제한 없음</span></div>
+      <div id="summaryHeadcount">📋 잔수: <span style="color:var(--sub);">설정 없음</span></div>
+      <div id="summaryPriceLimit">💰 가격: <span style="color:var(--sub);">제한 없음</span></div>
     </div>
 
     <!-- 주문설정 탭 -->
     <div class="admin-tabs">
-      <button class="admin-tab active" data-otab="store">🏪 가게선택 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
-      <button class="admin-tab" data-otab="deadline">⏰ 마감시간</button>
-      <button class="admin-tab" data-otab="headcount">👥 주문잔수</button>
-      <button class="admin-tab" data-otab="pricelimit">💰 주문가격</button>
+      <button class="admin-tab active" data-otab="teamlink">🔗 링크 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
+      <button class="admin-tab" data-otab="store">🏪 가게 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
+      <button class="admin-tab" data-otab="deadline">⏰ 시간</button>
+      <button class="admin-tab" data-otab="headcount">👥 잔수</button>
+      <button class="admin-tab" data-otab="pricelimit">💰 가격</button>
     </div>
 
     <!-- 패널: 가게선택 (다중선택) -->
@@ -807,6 +809,24 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
           <span style="font-size:.9rem;font-weight:700;color:var(--sub);">원</span>
         </div>
         <button class="btn-clear-price-limit" id="btnClearPriceLimit">가격 한도 해제</button>
+      </div>
+    </div>
+
+    <!-- 패널: 팀 링크 생성 -->
+    <div class="admin-panel" id="opanelTeamlink">
+      <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:.82rem;font-weight:800;color:#0369A1;margin-bottom:6px;">🔗 팀별 주문 링크 생성</div>
+        <div style="font-size:.75rem;color:#0369A1;line-height:1.6;">각 팀 단톡방에 링크를 공유하면<br>팀별로 주문이 완전히 분리됩니다.</div>
+      </div>
+      <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">팀 이름 입력</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="inpTeamName" placeholder="예: 1팀, 소방1팀, 행정팀" maxlength="10"
+          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;">
+        <button id="btnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
+      </div>
+      <div id="teamLinkList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="font-size:.72rem;color:var(--sub);text-align:center;margin-top:10px;line-height:1.6;">
+        링크 복사 후 카카오톡 단톡방에 공유하세요
       </div>
     </div>
 
@@ -1248,6 +1268,8 @@ async function fetchMenusFromDB(force=false){
 const CUSTOM='__custom__';
 let brand='paik', curCat='전체', curTemp='ICE';
 let orders=[], allOrders=[], sessionId='', sessionCount=1, isAdding=false;
+let teamName = ''; // URL ?team=XXX 에서 읽어온 팀 이름
+let orderMode = 'admin'; // 'admin' | 'order' (직원용)
 let maxPricePerOrder = 0; // 1인당 주문가격 한도 (0=제한없음)
 let adminBrand='paik', delBrand='paik';
 
@@ -1256,26 +1278,43 @@ function todayBase(){
   const d=new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 }
+function loadTeamFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get('team');
+  if(t) teamName = decodeURIComponent(t).trim();
+  const m = params.get('mode');
+  if(m === 'order') orderMode = 'order';
+  else orderMode = 'admin';
+}
+
+function getTeamKey(){
+  // 팀별 localStorage 키 분리
+  return teamName ? LS_SESSION_KEY + '_' + teamName : LS_SESSION_KEY;
+}
+
 function loadSession(){
+  loadTeamFromURL();
   try{
-    const s=JSON.parse(localStorage.getItem(LS_SESSION_KEY)||'{}');
+    const s=JSON.parse(localStorage.getItem(getTeamKey())||'{}');
     brand=s.brand||'paik';
-    sessionId=s.sessionId||todayBase()+'_1';
+    // 팀이 다르면 세션 초기화
+    sessionId=s.sessionId||todayBase()+'_'+(teamName||'')+'_1';
     sessionCount=s.count||1;
-  }catch(e){ sessionId=todayBase()+'_1'; sessionCount=1; }
+  }catch(e){ sessionId=todayBase()+'_'+(teamName||'')+'_1'; sessionCount=1; }
 }
 function saveSession(){
-  localStorage.setItem(LS_SESSION_KEY,JSON.stringify({brand,sessionId,count:sessionCount}));
+  localStorage.setItem(getTeamKey(),JSON.stringify({brand,sessionId,count:sessionCount}));
 }
 function sessionLabel(){
-  return sessionCount+'회차';
+  return (teamName ? teamName+' · ' : '') + sessionCount+'회차';
 }
 function newSession(){
   sessionCount = (sessionCount||1) + 1;
-  sessionId = todayBase()+'_'+sessionCount;
+  sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
   saveSession();
   $('sessionLabel').textContent = sessionLabel();
-  orders=[]; renderOrders(); fetchOrders(); toast(sessionCount+'회차 주문을 시작합니다');
+  orders=[]; renderOrders(); fetchOrders();
+  toast((teamName?teamName+' ':'') + sessionCount+'회차 주문을 시작합니다');
 }
 
 /* ═══════════════════════════════════════
@@ -1430,6 +1469,133 @@ function renderOrders(){
 
 
 
+
+
+/* ═══════════════════════════════════════
+   역할 모드 적용 (admin / order)
+═══════════════════════════════════════ */
+function applyOrderMode(){
+  if(orderMode !== 'order') return; // admin은 그대로
+
+  // 직원 모드: 주문 추가 폼만 보이고 나머지 숨김
+
+  // 관리자 버튼 숨김
+  const adminBtns = ['btnOrderOpen','btnMenuOpen'];
+  adminBtns.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+
+  // 헤더에 직원 모드 뱃지
+  const badge = document.getElementById('teamBadge');
+  if(badge){
+    badge.style.background = 'rgba(255,255,255,.25)';
+  }
+
+  // 주문 현황 카드 숨김 (전체 초기화 포함)
+  document.querySelectorAll('.card').forEach(card=>{
+    const h2 = card.querySelector('h2');
+    if(h2 && h2.textContent.includes('주문 현황')){
+      card.style.display = 'none';
+    }
+  });
+
+  // 하단 바 버튼 숨김 (주문서/재주문/통합주문서)
+  ['btnOpenReceipt','btnOpenAllReceipt','btnOpenReorder'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+
+  // 새 주문 버튼 숨김
+  const newSessionBtn = document.getElementById('btnNewSession');
+  if(newSessionBtn) newSessionBtn.style.display='none';
+
+  // 하단 바 배경 단순화
+  const bottomBar = document.querySelector('.bottom-bar');
+  if(bottomBar){
+    bottomBar.style.justifyContent = 'center';
+  }
+
+  // 안내 문구 변경
+  const notice = document.querySelector('.notice');
+  if(notice) notice.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
+}
+/* ═══════════════════════════════════════
+   팀별 링크 생성
+═══════════════════════════════════════ */
+const LS_TEAMS_KEY = 'coffeeTeamList_v1';
+
+function loadTeamList(){
+  try{ return JSON.parse(localStorage.getItem(LS_TEAMS_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveTeamList(list){
+  localStorage.setItem(LS_TEAMS_KEY, JSON.stringify(list));
+}
+
+function getBaseURL(){
+  return window.location.origin + window.location.pathname;
+}
+
+function renderTeamLinkList(){
+  const list = loadTeamList();
+  const container = $('teamLinkList');
+  container.innerHTML = '';
+  if(!list.length){
+    container.innerHTML = '<div style="text-align:center;color:var(--sub);font-size:.82rem;padding:16px 0;">팀을 추가해주세요</div>';
+    return;
+  }
+  list.forEach(team=>{
+    const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team);
+    const orderUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + '&mode=order';
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#F8F7F4;border-radius:10px;padding:10px 12px;margin-bottom:4px;';
+    div.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<span style="font-size:.92rem;font-weight:800;">'+team+'</span>' +
+        '<button class="btn-del-team" style="border:none;background:#FBE7E5;color:var(--danger);font-size:.72rem;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;font-family:inherit;">삭제</button>' +
+      '</div>' +
+      // 관리자용 링크
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+        '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">관리자</span>' +
+        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="admin-url"></div>' +
+        '<button class="btn-copy-admin" style="border:none;background:var(--primary);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>' +
+      '</div>' +
+      // 직원용 링크
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+        '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">직원</span>' +
+        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="order-url"></div>' +
+        '<button class="btn-copy-order" style="border:none;background:#16A34A;color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>' +
+      '</div>';
+
+    div.querySelector('.admin-url').textContent = adminUrl;
+    div.querySelector('.order-url').textContent = orderUrl;
+
+    function copyToClip(text, label){
+      navigator.clipboard.writeText(text)
+        .then(()=>toast('📋 '+label+' 복사됨'))
+        .catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+label+' 복사됨'); });
+    }
+    div.querySelector('.btn-copy-admin').addEventListener('click',()=>copyToClip(adminUrl, team+' 관리자 링크'));
+    div.querySelector('.btn-copy-order').addEventListener('click',()=>copyToClip(orderUrl, team+' 직원 링크'));
+    div.querySelector('.btn-del-team').addEventListener('click',()=>{
+      const updated = loadTeamList().filter(t=>t!==team);
+      saveTeamList(updated);
+      renderTeamLinkList();
+    });
+    container.appendChild(div);
+  });
+}
+
+$('btnAddTeam').addEventListener('click',()=>{
+  const name = $('inpTeamName').value.trim();
+  if(!name){ toast('팀 이름을 입력해주세요'); return; }
+  const list = loadTeamList();
+  if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
+  list.push(name);
+  saveTeamList(list);
+  $('inpTeamName').value = '';
+  renderTeamLinkList();
+  toast('✅ '+name+' 링크 생성됨');
+});
+
+$('inpTeamName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btnAddTeam').click(); });
 /* ═══════════════════════════════════════
    주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
 ═══════════════════════════════════════ */
@@ -2122,6 +2288,10 @@ function initTempSettings(){
 }
 
 function updateOrderSummary(){
+  // 팀
+  const teamEl = document.getElementById('summaryTeam');
+  if(teamEl) teamEl.innerHTML = '🔗 팀: <span style="color:'+(teamName?'var(--primary)':'var(--sub)')+';">'+(teamName||'전체 공용')+'</span>';
+
   // 가게
   const sel = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
   const storeStr = sel.length ? sel.map(b=>STORE_META[b].name).join(', ') : '⚠️ 필수 선택';
@@ -2139,17 +2309,18 @@ function updateOrderSummary(){
 
   // 잔수
   const hcVal = parseInt($('inpHeadcount').value||'0',10);
-  $('summaryHeadcount').innerHTML = '📋 주문잔수: <span style="color:'+(hcVal?'var(--primary)':'var(--sub)')+';">'+(hcVal?hcVal+'잔':'설정 없음')+'</span>';
+  $('summaryHeadcount').innerHTML = '📋 잔수: <span style="color:'+(hcVal?'var(--primary)':'var(--sub)')+';">'+(hcVal?hcVal+'잔':'설정 없음')+'</span>';
   // 가격 한도
   const plVal = parseInt(($('inpPriceLimit')||{value:''}).value||'0',10);
   const plEl = document.getElementById('summaryPriceLimit');
-  if(plEl) plEl.innerHTML = '💰 주문가격: <span style="color:'+(plVal?'#EA580C':'var(--sub)')+';">'+(plVal?plVal.toLocaleString()+'원 이하':'제한 없음')+'</span>';
+  if(plEl) plEl.innerHTML = '💰 가격: <span style="color:'+(plVal?'#EA580C':'var(--sub)')+';">'+(plVal?plVal.toLocaleString()+'원 이하':'제한 없음')+'</span>';
 }
 
 /* ── 주문설정 모달 ── */
 function openOrderModal(){
   initTempSettings();
-  switchOrderTab('store');
+  renderTeamLinkList();
+  switchOrderTab('teamlink');
   $('modalOrder').classList.add('show');
 }
 function closeOrderModal(){ $('modalOrder').classList.remove('show'); }
@@ -2171,17 +2342,6 @@ document.querySelectorAll('.price-limit-preset').forEach(btn=>{
   });
 });
 
-$('inpPriceLimit').addEventListener('input',()=>{
-  tmpPriceLimit = parseInt($('inpPriceLimit').value||'0', 10);
-  updateOrderSummary();
-});
-
-$('btnClearPriceLimit').addEventListener('click',()=>{
-  tmpPriceLimit = 0;
-  $('inpPriceLimit').value = '';
-  updateOrderSummary();
-  toast('가격 한도 해제됨 (저장 전)');
-});
 function switchOrderTab(tab){
   document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
   document.querySelectorAll('#modalOrder .admin-panel').forEach(p=>p.classList.remove('show'));
@@ -3143,6 +3303,13 @@ $('btnClearDeadline').addEventListener('click',()=>{
 (async () => {
   loadSession();
   $('todayDate').textContent = todayStr();
+  // 팀 뱃지 표시
+  if(teamName){
+    const badge = $('teamBadge');
+    badge.textContent = teamName;
+    badge.style.display = 'inline';
+    document.title = '☕ ' + teamName + ' 주문 취합';
+  }
   $('sessionLabel').textContent = sessionLabel();
   applyBrandTheme();
   renderCats();
@@ -3169,6 +3336,8 @@ $('btnClearDeadline').addEventListener('click',()=>{
   connectRealtime();
   // 모바일 여부에 따라 배민/쿠팡 버튼 표시
   applyMobileButtons();
+  // 역할 모드 적용
+  applyOrderMode();
 
   // 관리자 DB 메뉴 새로고침 버튼
   $('btnRefreshMenus').addEventListener('click', async () => {
