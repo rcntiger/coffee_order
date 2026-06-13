@@ -1,0 +1,3885 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 페이지 모드 즉시 결정 (깜빡임 방지) -->
+<script>
+(function(){
+  const p = new URLSearchParams(location.search);
+  const team = p.get('team');
+  const mode = p.get('mode');
+  if(!team){
+    document.documentElement.classList.add('mode-setup-pre');
+  }
+})();
+</script>
+<title>☕ 주문 취합</title>
+<style>
+:root{
+  --primary:#143A6B; --accent:#FFD400; --on-primary:#fff;
+  --bg:#F5F4F0; --card:#fff; --line:#E5E2DA; --text:#1E1E1E; --sub:#7A7670;
+  --danger:#D6453A; --radius:14px;
+}
+body.brand-mega{--primary:#1C1B1A;--accent:#FFE600;}
+body.brand-compose{--primary:#5C3A21;--accent:#FFC907;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:var(--bg);color:var(--text);
+  max-width:560px;margin:0 auto;padding-bottom:110px;transition:background .2s;
+}
+header{
+  background:var(--primary);color:var(--on-primary);
+  padding:20px 18px 16px;border-radius:0 0 22px 22px;transition:background .25s;
+}
+header h1{font-size:1.15rem;font-weight:800;letter-spacing:-.02em;}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-top:2px;}
+header .date{font-size:.8rem;opacity:.75;}
+.btn-admin-open{
+  border:none;background:rgba(255,255,255,.18);color:#fff;
+  font-size:.78rem;font-weight:700;font-family:inherit;
+  padding:5px 10px;border-radius:8px;cursor:pointer;
+}
+
+/* ── PIN 모달 ── */
+.pin-modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:60;align-items:center;justify-content:center;
+}
+.pin-modal-bg.show{display:flex;}
+.pin-box{
+  background:#fff;border-radius:22px;padding:28px 24px 24px;
+  width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);
+}
+.pin-box h3{font-size:1rem;font-weight:800;margin-bottom:4px;}
+.pin-box .pin-sub{font-size:.78rem;color:var(--sub);margin-bottom:20px;white-space:pre-line;line-height:1.6;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:22px;}
+.pin-dot{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--line);background:#fff;transition:all .15s;
+}
+.pin-dot.filled{background:var(--primary);border-color:var(--primary);}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.pin-key{
+  padding:16px 0;border:1.5px solid var(--line);border-radius:12px;
+  font-size:1.2rem;font-weight:800;font-family:inherit;
+  background:#FAFAF8;color:var(--text);cursor:pointer;transition:all .1s;
+}
+.pin-key:active{background:var(--primary);color:#fff;transform:scale(.95);}
+.pin-key.del{font-size:1rem;color:var(--sub);}
+.pin-key.empty{border:none;background:none;cursor:default;}
+.pin-error-msg{font-size:.78rem;color:var(--danger);font-weight:700;
+  height:18px;margin-bottom:8px;transition:opacity .2s;}
+.btn-pin-cancel{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+.pin-change-row{margin-top:10px;}
+.btn-pin-change{
+  border:none;background:none;color:var(--sub);font-size:.72rem;
+  font-family:inherit;cursor:pointer;text-decoration:underline;
+}
+.sync-status{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;margin-top:6px;opacity:.9;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#aaa;transition:background .3s;}
+.sync-dot.ok{background:#4CAF50;}
+.sync-dot.err{background:#f44336;}
+.sync-dot.loading{background:#FFD400;animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.brand-tabs{display:flex;gap:8px;margin-top:14px;}
+.brand-tab{
+  flex:1;padding:10px 0;border:none;border-radius:10px;cursor:pointer;
+  font-size:.9rem;font-weight:700;font-family:inherit;
+  background:rgba(255,255,255,.14);color:rgba(255,255,255,.85);transition:all .15s;
+}
+.brand-tab.active{background:var(--accent);color:#1E1E1E;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+main{padding:16px 14px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card h2{font-size:.95rem;font-weight:800;margin-bottom:12px;letter-spacing:-.01em;}
+.card h2 .count-badge{
+  display:inline-block;background:var(--primary);color:#fff;
+  font-size:.72rem;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:1px;
+}
+label{display:block;font-size:.78rem;font-weight:700;color:var(--sub);margin:12px 0 5px;}
+label:first-of-type{margin-top:0;}
+input[type=text],input[type=number],select{
+  width:100%;padding:11px 12px;font-size:.95rem;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#FAFAF8;color:var(--text);outline:none;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--primary);}
+.row{display:flex;gap:8px;}
+.row>*{flex:1;}
+.cat-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none;}
+.cat-scroll::-webkit-scrollbar{display:none;}
+.cat-btn{
+  flex:none;padding:6px 12px;border:1.5px solid var(--line);border-radius:99px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#FAFAF8;color:var(--sub);
+  cursor:pointer;white-space:nowrap;
+}
+.cat-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.seg{display:flex;gap:6px;}
+.seg button{
+  flex:1;padding:10px 0;font-size:.9rem;font-weight:700;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.seg button.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+.seg button.on.ice{background:#2D7FD3;border-color:#2D7FD3;}
+.seg button.on.hot{background:#D6453A;border-color:#D6453A;}
+.opt-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+.opt-row .opt-label{font-size:.88rem;font-weight:600;}
+.opt-row .opt-price{font-size:.78rem;color:var(--sub);margin-left:6px;}
+.toggle{position:relative;width:46px;height:26px;flex:none;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle .knob{position:absolute;inset:0;background:#D8D5CE;border-radius:99px;cursor:pointer;transition:.15s;}
+.toggle .knob::after{
+  content:'';position:absolute;width:20px;height:20px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.toggle input:checked+.knob{background:var(--primary);}
+.toggle input:checked+.knob::after{left:23px;}
+.custom-fields{display:none;margin-top:10px;}
+.custom-fields.show{display:block;}
+/* ── 수량 선택 ── */
+.qty-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;margin-bottom:4px;}
+.qty-row .qty-label{font-size:.88rem;font-weight:600;}
+.qty-ctrl{display:flex;align-items:center;gap:0;}
+.qty-btn{
+  width:34px;height:34px;border:1.5px solid var(--line);background:#fff;
+  font-size:1.2rem;font-weight:700;cursor:pointer;font-family:inherit;
+  color:var(--text);transition:background .1s;
+}
+.qty-btn:first-child{border-radius:8px 0 0 8px;}
+.qty-btn:last-child{border-radius:0 8px 8px 0;}
+.qty-btn:active{background:#F0EDE8;}
+.qty-btn:disabled{opacity:.35;cursor:not-allowed;}
+.qty-num{
+  width:38px;height:34px;border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:800;font-variant-numeric:tabular-nums;
+  background:#FAFAF8;
+}
+.btn-add{
+  width:100%;margin-top:16px;padding:14px 0;border:none;border-radius:12px;
+  background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;
+  cursor:pointer;letter-spacing:-.01em;
+}
+.btn-add:disabled{opacity:.6;cursor:not-allowed;}
+.btn-add:active:not(:disabled){transform:scale(.99);}
+.order-item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px dashed var(--line);}
+.order-item:last-child{border-bottom:none;}
+.order-item .who{flex:none;width:52px;font-size:.85rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.order-item .what{flex:1;min-width:0;}
+.order-item .menu-name{font-size:.9rem;font-weight:600;}
+.order-item .menu-opt{font-size:.74rem;color:var(--sub);margin-top:1px;}
+.order-item .price{flex:none;font-size:.85rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.order-item .del{flex:none;border:none;background:none;color:#C9C5BD;font-size:1.05rem;cursor:pointer;padding:4px 2px 4px 6px;line-height:1;}
+.order-item .del:active{color:var(--danger);}
+.temp-chip{display:inline-block;font-size:.68rem;font-weight:800;padding:1px 6px;border-radius:6px;margin-right:4px;vertical-align:1px;}
+.temp-chip.ICE{background:#E3F0FB;color:#2D7FD3;}
+.temp-chip.HOT{background:#FBE7E5;color:#D6453A;}
+.empty{text-align:center;color:var(--sub);font-size:.85rem;padding:22px 0;}
+.list-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+.btn-reset{border:none;background:none;color:var(--sub);font-size:.78rem;font-family:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.bottom-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:560px;background:var(--primary);color:#fff;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:12px;
+  border-radius:18px 18px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.12);transition:background .25s;
+}
+.bottom-bar .sum{flex:1;}
+.bottom-bar .sum .cups{font-size:.75rem;opacity:.8;}
+.bottom-bar .sum .total{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums;}
+.btn-receipt{flex:none;border:none;border-radius:11px;padding:12px 18px;background:var(--accent);color:#1E1E1E;font-size:.95rem;font-weight:800;font-family:inherit;cursor:pointer;}
+
+/* ── 모달 공통 ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;align-items:flex-end;justify-content:center;}
+.modal-bg.show{display:flex;}
+.modal-sheet{width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:20px 20px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));}
+
+/* ── 영수증 ── */
+.receipt{background:#FFFDF6;}
+.receipt-head{text-align:center;border-bottom:2px dashed #C9C5BD;padding-bottom:12px;}
+.receipt-head .shop{font-size:1.05rem;font-weight:800;}
+.receipt-head .meta{font-size:.75rem;color:var(--sub);margin-top:3px;}
+.receipt-body{padding:12px 0;border-bottom:2px dashed #C9C5BD;}
+.receipt-line{display:flex;align-items:baseline;gap:8px;padding:5px 0;font-size:.9rem;font-variant-numeric:tabular-nums;}
+.receipt-line .nm{flex:1;}
+.receipt-line .qt{flex:none;font-weight:800;}
+.receipt-line .pr{flex:none;width:74px;text-align:right;color:var(--sub);font-size:.82rem;}
+.receipt-line .ppl{font-size:.7rem;color:var(--sub);display:block;margin-top:1px;}
+.receipt-total{display:flex;justify-content:space-between;padding:12px 0 4px;font-size:1.05rem;font-weight:800;font-variant-numeric:tabular-nums;}
+.receipt-btns{display:flex;gap:8px;margin-top:14px;}
+.receipt-btns button{flex:1;padding:13px 0;border-radius:11px;font-size:.92rem;font-weight:800;font-family:inherit;cursor:pointer;border:none;}
+.btn-copy{background:var(--primary);color:#fff;}
+.btn-close-r{background:#EBE8E1;color:var(--text);}
+
+/* ── 관리자 모달 ── */
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.admin-header h2{font-size:1rem;font-weight:800;}
+.btn-admin-close{border:none;background:none;font-size:1.3rem;cursor:pointer;color:var(--sub);padding:4px;}
+.admin-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.admin-tab{
+  flex:1;padding:9px 0;border:1.5px solid var(--line);border-radius:10px;
+  font-size:.85rem;font-weight:700;font-family:inherit;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.admin-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.admin-panel{display:none;}
+.admin-panel.show{display:block;}
+
+/* 가격 수정 테이블 */
+.price-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+.price-table th{
+  background:#F5F4F0;padding:8px 6px;text-align:left;
+  font-size:.75rem;font-weight:700;color:var(--sub);border-bottom:2px solid var(--line);
+}
+.price-table td{padding:7px 6px;border-bottom:1px dashed var(--line);vertical-align:middle;}
+.price-table tr:last-child td{border-bottom:none;}
+.price-table .menu-nm{font-weight:600;font-size:.88rem;}
+.price-table .cat-tag{
+  display:inline-block;font-size:.65rem;font-weight:700;padding:1px 5px;
+  border-radius:5px;background:#EEF2FF;color:#3730A3;margin-left:4px;vertical-align:1px;
+}
+.price-inp{
+  width:72px;padding:6px 8px;font-size:.85rem;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:8px;background:#FAFAF8;color:var(--text);
+  outline:none;text-align:right;font-variant-numeric:tabular-nums;
+}
+.price-inp:focus{border-color:var(--primary);}
+.price-inp.na{background:#F5F4F0;color:#C9C5BD;pointer-events:none;}
+
+/* 메뉴 추가 폼 */
+.add-menu-form{background:#F8F7F4;border-radius:12px;padding:14px;margin-bottom:14px;}
+.add-menu-form h3{font-size:.88rem;font-weight:800;margin-bottom:10px;}
+.form-row{display:flex;gap:8px;margin-bottom:8px;}
+.form-row>*{flex:1;}
+.inp-sm{
+  width:100%;padding:9px 10px;font-size:.88rem;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:9px;background:#fff;color:var(--text);outline:none;
+}
+.inp-sm:focus{border-color:var(--primary);}
+.btn-form-add{
+  width:100%;padding:11px 0;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-size:.9rem;font-weight:800;font-family:inherit;cursor:pointer;
+}
+
+/* 메뉴 삭제 리스트 */
+.del-menu-item{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 4px;border-bottom:1px dashed var(--line);font-size:.88rem;
+}
+.del-menu-item:last-child{border-bottom:none;}
+.del-menu-item .dm-name{flex:1;font-weight:600;}
+.del-menu-item .dm-price{color:var(--sub);font-size:.8rem;font-variant-numeric:tabular-nums;}
+.btn-del-menu{
+  flex:none;border:none;background:#FBE7E5;color:var(--danger);
+  font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:inherit;
+}
+
+.btn-save-prices{
+  width:100%;padding:13px 0;border:none;border-radius:12px;
+  background:#16A34A;color:#fff;font-size:.95rem;font-weight:800;font-family:inherit;
+  cursor:pointer;margin-top:14px;
+}
+.save-notice{font-size:.72rem;color:var(--sub);text-align:center;margin-top:6px;}
+
+.toast{
+  position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(10px);
+  background:#1E1E1E;color:#fff;font-size:.85rem;font-weight:600;
+  padding:10px 18px;border-radius:99px;opacity:0;pointer-events:none;
+  transition:all .25s;z-index:999;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* ── 통합주문서 ── */
+.arc-brand-section{ margin-bottom:14px; }
+.arc-brand-head{
+  display:flex; align-items:center; gap:8px;
+  background:var(--primary); color:#fff;
+  padding:8px 12px; border-radius:10px; margin-bottom:6px;
+  font-size:.88rem; font-weight:800;
+}
+.arc-brand-head .arc-icon{ font-size:1.1rem; }
+.arc-brand-total{ font-size:.78rem; opacity:.85; margin-left:auto; font-variant-numeric:tabular-nums; }
+.arc-empty{ text-align:center; color:var(--sub); font-size:.82rem; padding:14px 0; }
+/* ── 주문 수정 모달 ── */
+.edit-field-label{font-size:.78rem;font-weight:700;color:var(--sub);margin:10px 0 5px;display:block;}
+.edit-field-label:first-of-type{margin-top:0;}
+.edit-seg{display:flex;gap:6px;margin-bottom:2px;}
+.edit-seg button{
+  flex:1;padding:9px 0;font-size:.88rem;font-weight:700;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.edit-seg button.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+.edit-seg button.on.ice{background:#2D7FD3;border-color:#2D7FD3;}
+.edit-seg button.on.hot{background:#D6453A;border-color:#D6453A;}
+.btn-edit-save{
+  width:100%;padding:13px 0;border:none;border-radius:12px;
+  background:var(--primary);color:#fff;font-size:.95rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-top:14px;
+}
+.btn-edit-cancel{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:12px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;margin-top:8px;
+}
+.order-item .order-num{
+  flex:none;font-size:.62rem;font-weight:800;
+  background:#EEF2FF;color:#3730A3;
+  padding:2px 6px;border-radius:5px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.order-item.is-reorder{ background:#FFF9F0; border-radius:8px; }
+.order-item .reorder-badge{
+  flex:none;font-size:.68rem;font-weight:800;
+  color:#D97706;margin-right:2px;
+}
+.order-item .edit-btn{
+  flex:none;border:none;background:none;color:#A8A29E;font-size:.85rem;
+  cursor:pointer;padding:4px 4px 4px 2px;line-height:1;
+}
+.order-item .edit-btn:active{color:var(--primary);}
+/* ── 재주문 모달 ── */
+.reorder-date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none;}
+.reorder-date-tabs::-webkit-scrollbar{display:none;}
+.reorder-date-tab{
+  flex:none;padding:7px 14px;border:1.5px solid var(--line);border-radius:99px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.reorder-date-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.reorder-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 4px;border-bottom:1px dashed var(--line);
+}
+.reorder-item:last-child{border-bottom:none;}
+.reorder-chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;background:#fff;}
+.reorder-chk.checked{background:var(--primary);border-color:var(--primary);color:#fff;font-size:.8rem;}
+.reorder-info{flex:1;min-width:0;}
+.reorder-name{font-size:.88rem;font-weight:800;}
+.reorder-menu{font-size:.78rem;color:var(--sub);margin-top:1px;}
+.reorder-price{flex:none;font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.reorder-actions{display:flex;gap:8px;margin-top:14px;}
+.btn-reorder-all{
+  flex:none;padding:8px 12px;border:1.5px solid var(--primary);border-radius:9px;
+  font-size:.78rem;font-weight:700;font-family:inherit;background:#fff;color:var(--primary);cursor:pointer;
+}
+.btn-reorder-confirm{
+  flex:1;padding:13px 0;border:none;border-radius:12px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.reorder-empty{text-align:center;color:var(--sub);font-size:.85rem;padding:30px 0;}
+.reorder-sel-count{font-size:.75rem;color:var(--primary);font-weight:700;margin-left:auto;}
+/* ── 주문 앱 연결 버튼 ── */
+.order-app-btns{display:flex;gap:8px;margin-top:10px;}
+.btn-kakaomap{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#FAE100;color:#3A1D1D;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.btn-baemin{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#2AC1BC;color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.btn-coupang{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#C00B1E;color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.btn-store-app{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:var(--primary);color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;transition:background .2s;
+}
+.receipt-store-notice{
+  font-size:.72rem;color:var(--sub);text-align:center;margin-top:8px;line-height:1.5;
+}
+/* ── 직원 모드 ── */
+body.mode-order .order-hide{ display:none !important; }
+
+body.mode-order .notice{ }
+/* ── 직원 내 주문 내역 ── */
+.my-orders-wrap{
+  display:none;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;
+}
+body.mode-order .my-orders-wrap{ display:block; }
+.my-orders-wrap h3{font-size:.88rem;font-weight:800;margin-bottom:10px;}
+.my-order-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 2px;border-bottom:1px dashed var(--line);font-size:.85rem;
+}
+.my-order-item:last-child{border-bottom:none;}
+.my-order-num{flex:none;font-size:.62rem;font-weight:800;background:#EEF2FF;color:#3730A3;padding:2px 5px;border-radius:5px;}
+.my-order-info{flex:1;min-width:0;}
+.my-order-menu{font-weight:600;}
+.my-order-opt{font-size:.72rem;color:var(--sub);margin-top:1px;}
+.my-order-price{flex:none;font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.my-order-empty{text-align:center;color:var(--sub);font-size:.82rem;padding:12px 0;}
+.my-order-total{
+  display:flex;justify-content:space-between;
+  padding:8px 2px 0;font-size:.88rem;font-weight:800;
+  border-top:1px solid var(--line);margin-top:4px;
+}
+/* ── 시작 화면 ── */
+.welcome-screen{
+  display:none;position:fixed;inset:0;
+  background:var(--primary);color:#fff;
+  z-index:100;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:32px 24px;text-align:center;
+  transition:background .25s;
+}
+body.brand-mega .welcome-screen{background:#1C1B1A;}
+body.brand-compose .welcome-screen{background:#5C3A21;}
+.welcome-screen.show{display:flex;}
+.welcome-icon{font-size:4rem;margin-bottom:16px;animation:bounce .8s infinite alternate;}
+@keyframes bounce{0%{transform:translateY(0);}100%{transform:translateY(-8px);}}
+.welcome-title{font-size:1.6rem;font-weight:900;margin-bottom:8px;letter-spacing:-.02em;}
+.welcome-sub{font-size:.9rem;opacity:.8;margin-bottom:36px;line-height:1.6;}
+.welcome-steps{
+  background:rgba(255,255,255,.12);border-radius:16px;
+  padding:18px 20px;margin-bottom:32px;width:100%;max-width:360px;
+  text-align:left;
+}
+.welcome-step{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.85rem;padding:6px 0;opacity:.9;line-height:1.5;
+}
+.welcome-step-num{
+  flex:none;width:22px;height:22px;border-radius:50%;
+  background:var(--accent);color:#1E1E1E;
+  font-size:.72rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-welcome-start{
+  width:100%;max-width:360px;padding:16px 0;
+  border:none;border-radius:14px;
+  background:var(--accent);color:#1E1E1E;
+  font-size:1.05rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:-.01em;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+}
+.btn-welcome-start:active{transform:scale(.98);}
+.welcome-version{font-size:.7rem;opacity:.4;margin-top:20px;}
+/* ── 설정 페이지 (mode-setup) ── */
+/* team 파라미터 없으면 즉시 앱 숨김 (깜빡임 방지) */
+html.mode-setup-pre header,
+html.mode-setup-pre .bottom-bar,
+html.mode-setup-pre .deadline-bar,
+html.mode-setup-pre .headcount-bar,
+html.mode-setup-pre .welcome-screen,
+html.mode-setup-pre section,
+html.mode-setup-pre .my-orders-wrap,
+html.mode-setup-pre .notice{ display:none !important; }
+html.mode-setup-pre .setup-page{ display:block; }
+
+body.mode-setup header,
+body.mode-setup .bottom-bar,
+body.mode-setup .deadline-bar,
+body.mode-setup .headcount-bar,
+body.mode-setup .welcome-screen,
+body.mode-setup section,
+body.mode-setup .my-orders-wrap,
+body.mode-setup .notice{ display:none !important; }
+.setup-page{ display:none; }
+body.mode-setup .setup-page{ display:block; }
+
+.setup-header{
+  background:var(--primary);color:#fff;
+  padding:28px 20px 22px;text-align:center;
+  border-radius:0 0 24px 24px;margin-bottom:20px;transition:background .25s;
+}
+body.brand-mega .setup-header{background:#1C1B1A;}
+body.brand-compose .setup-header{background:#5C3A21;}
+.setup-header .sh-icon{font-size:2.8rem;margin-bottom:10px;}
+.setup-header h1{font-size:1.4rem;font-weight:900;margin-bottom:4px;}
+.setup-header p{font-size:.82rem;opacity:.8;line-height:1.5;}
+.setup-body{padding:0 16px 110px;}
+.setup-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.setup-card h2{font-size:.95rem;font-weight:800;margin-bottom:4px;}
+.setup-card p{font-size:.78rem;color:var(--sub);margin-bottom:12px;line-height:1.5;}
+.setup-team-card{background:#F8F7F4;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.setup-link-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.setup-link-row:last-child{margin-bottom:0;}
+.setup-link-badge{flex:none;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:5px;}
+.setup-link-url{flex:1;font-size:.68rem;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.setup-copy-btn{flex:none;border:none;font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.setup-empty-msg{text-align:center;color:var(--sub);font-size:.85rem;padding:18px 0;}
+.setup-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:.88rem;padding:8px 0;border-bottom:1px dashed var(--line);}
+.setup-summary-row:last-child{border-bottom:none;}
+.setup-summary-label{color:var(--sub);font-weight:600;}
+.setup-summary-val{font-weight:800;}
+.setup-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:8px;}
+.btn-setup-done{width:100%;padding:15px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;}
+.btn-setup-done:disabled{opacity:.45;cursor:not-allowed;}
+.notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
+/* ── 인원 현황 바 ── */
+.headcount-bar{
+  display:none; margin:0 14px 14px;
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:14px; padding:14px 16px;
+}
+.headcount-bar.show{display:block;}
+.hc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hc-title{font-size:.82rem;font-weight:800;color:var(--text);}
+.hc-nums{display:flex;gap:14px;}
+.hc-num-box{text-align:center;}
+.hc-num{font-size:1.3rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.hc-num.done{color:#16A34A;}
+.hc-num.pending{color:var(--danger);}
+.hc-num.total{color:var(--primary);}
+.hc-num-label{font-size:.65rem;color:var(--sub);margin-top:2px;font-weight:600;}
+.hc-progress-bg{height:8px;background:#EBE8E1;border-radius:99px;overflow:hidden;}
+.hc-progress-fill{height:100%;background:#16A34A;border-radius:99px;transition:width .4s ease;}
+.hc-status{font-size:.75rem;color:var(--sub);margin-top:6px;text-align:right;font-weight:600;}
+.hc-status.all-done{color:#16A34A;font-weight:800;}
+/* ── 관리자 인원 패널 ── */
+.headcount-setting-box{background:#F8F7F4;border-radius:12px;padding:16px;margin-bottom:12px;}
+.headcount-setting-box h3{font-size:.88rem;font-weight:800;margin-bottom:12px;}
+.hc-inp-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.hc-inp{
+  flex:1;padding:11px 14px;font-size:1.2rem;font-weight:800;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#fff;
+  color:var(--text);outline:none;text-align:center;
+}
+.hc-inp:focus{border-color:var(--primary);}
+.hc-quick-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.hc-quick-btn{
+  flex:none;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;
+  font-size:.82rem;font-weight:700;font-family:inherit;background:#fff;color:var(--sub);cursor:pointer;
+}
+.hc-quick-btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn-set-headcount{
+  width:100%;padding:12px 0;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-bottom:8px;
+}
+.btn-clear-headcount{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+
+/* ── 마감 카운트다운 바 ── */
+.deadline-bar{
+  display:none; margin:0 14px 14px;
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.10);
+}
+.deadline-bar.show{display:block;}
+.deadline-inner{
+  padding:12px 16px;
+  background:linear-gradient(135deg,#1E3A5F,#2D6A9F);
+  color:#fff;
+}
+.deadline-bar.urgent .deadline-inner{
+  background:linear-gradient(135deg,#7F1D1D,#DC2626);
+  animation:urgentPulse 1.2s infinite;
+}
+.deadline-bar.ended .deadline-inner{
+  background:linear-gradient(135deg,#374151,#6B7280);
+}
+@keyframes urgentPulse{0%,100%{opacity:1;}50%{opacity:.85;}}
+.deadline-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.deadline-label{font-size:.75rem;font-weight:700;opacity:.85;}
+.deadline-time{font-size:1.5rem;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums;}
+.deadline-progress-bg{height:5px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;}
+.deadline-progress-fill{height:100%;background:#fff;border-radius:99px;transition:width .5s linear;}
+.deadline-bar.urgent .deadline-progress-fill{background:#FFD400;}
+/* ── 가게설정 ── */
+.brand-locked .brand-tab.brand-hidden{ display:none !important; }
+
+.store-card{
+  border:2.5px solid var(--line); border-radius:14px; padding:16px 14px;
+  margin-bottom:10px; cursor:pointer; transition:all .15s; background:#fff;
+  display:flex; align-items:center; gap:14px;
+}
+.store-card:hover{ border-color:var(--primary); background:#F5F8FF; }
+.store-card.selected{ border-color:var(--primary); background:#EEF4FF; }
+.store-icon{ font-size:2rem; flex:none; }
+.store-info{ flex:1; }
+.store-name{ font-size:.95rem; font-weight:800; }
+.store-desc{ font-size:.75rem; color:var(--sub); margin-top:2px; }
+.store-check{ flex:none; font-size:1.2rem; opacity:0; transition:opacity .15s; }
+.store-card.selected .store-check{ opacity:1; }
+.btn-set-store{
+  width:100%; padding:13px 0; border:none; border-radius:12px;
+  background:var(--primary); color:#fff; font-size:.95rem; font-weight:800;
+  font-family:inherit; cursor:pointer; margin-top:4px; margin-bottom:8px;
+}
+.btn-unlock-store{
+  width:100%; padding:11px 0; border:1.5px solid var(--line); border-radius:12px;
+  background:#fff; color:var(--sub); font-size:.88rem; font-weight:700;
+  font-family:inherit; cursor:pointer;
+}
+.current-store-box{
+  display:none; background:#EEF4FF; border:1px solid #C7D2FE;
+  border-radius:10px; padding:12px 14px; margin-bottom:12px;
+}
+.current-store-box.show{ display:flex; align-items:center; gap:10px; }
+.current-store-box .cs-icon{ font-size:1.5rem; }
+.current-store-box .cs-info .cs-label{ font-size:.72rem; font-weight:700; color:#6366F1; }
+.current-store-box .cs-info .cs-val{ font-size:1rem; font-weight:800; color:#3730A3; }
+/* ── 1인당 주문가격 ── */
+.price-limit-box{background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.price-limit-box h3{font-size:.88rem;font-weight:800;margin-bottom:10px;color:#C2410C;}
+.price-limit-inp-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.price-limit-inp{
+  flex:1;padding:11px 14px;font-size:1.1rem;font-weight:800;font-family:inherit;
+  border:1.5px solid #FED7AA;border-radius:10px;background:#fff;
+  color:var(--text);outline:none;text-align:right;font-variant-numeric:tabular-nums;
+}
+.price-limit-inp:focus{border-color:#EA580C;}
+.price-limit-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.price-limit-preset{
+  flex:none;padding:6px 11px;border:1.5px solid #FED7AA;border-radius:8px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#fff;color:#C2410C;cursor:pointer;
+}
+.price-limit-preset:hover{background:#FFF7ED;border-color:#EA580C;}
+.btn-clear-price-limit{
+  width:100%;padding:10px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.85rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+/* ── 관리자 마감시간 패널 ── */
+.time-setting-box{background:#F8F7F4;border-radius:12px;padding:16px;margin-bottom:12px;}
+.time-setting-box h3{font-size:.88rem;font-weight:800;margin-bottom:12px;}
+.time-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.time-row label{font-size:.82rem;font-weight:700;color:var(--sub);flex:none;width:64px;margin:0;}
+.time-inp{
+  flex:1;padding:10px 12px;font-size:1rem;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--text);
+  outline:none;text-align:center;
+}
+.time-inp:focus{border-color:var(--primary);}
+.preset-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.preset-btn{
+  flex:none;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#fff;color:var(--sub);cursor:pointer;
+}
+.preset-btn:hover{border-color:var(--primary);color:var(--primary);}
+.btn-set-deadline{
+  width:100%;padding:12px 0;border:none;border-radius:10px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;margin-bottom:8px;
+}
+.btn-clear-deadline{
+  width:100%;padding:11px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+.current-deadline{
+  display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:10px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.current-deadline.show{display:block;}
+.current-deadline .cd-label{font-size:.72rem;font-weight:700;color:#6366F1;margin-bottom:3px;}
+.current-deadline .cd-val{font-size:1rem;font-weight:800;color:#3730A3;}
+@media(prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body class="brand-paik">
+
+<!-- 설정 페이지 -->
+<div class="setup-page" id="setupPage">
+  <div class="setup-header">
+    <div class="sh-icon">☕</div>
+    <h1>주문 취합 설정</h1>
+    <p>주문설정 후 링크를 생성하고<br>단톡방에 공유하세요</p>
+  </div>
+  <div class="setup-body">
+    <div class="setup-card">
+      <h2>⚙️ 주문설정 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수(가게)</span></h2>
+      <p>가게 선택은 필수입니다. 마감시간, 잔수, 가격은 선택사항입니다.</p>
+      <div id="setupSummary">
+        <div class="setup-summary-row"><span class="setup-summary-label">🏪 가게</span><span class="setup-summary-val" id="setupSumStore" style="color:#EF4444;">미설정 (필수)</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">⏰ 마감</span><span class="setup-summary-val" id="setupSumDeadline" style="color:var(--sub);">미설정</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">📋 잔수</span><span class="setup-summary-val" id="setupSumHeadcount" style="color:var(--sub);">미설정</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">💰 가격</span><span class="setup-summary-val" id="setupSumPrice" style="color:var(--sub);">제한없음</span></div>
+      </div>
+      <button id="setupBtnSettings" style="width:100%;margin-top:12px;padding:11px 0;border:none;border-radius:10px;background:#EEF2FF;color:#3730A3;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">⚙️ 설정 열기</button>
+    </div>
+    <div class="setup-card">
+      <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
+      <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
+          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
+        <button id="setupBtnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
+      </div>
+      <div id="setupTeamList"><div class="setup-empty-msg">팀을 추가해주세요</div></div>
+    </div>
+  </div>
+  <div class="setup-bottom">
+    <button id="setupBtnNewOrder" style="flex:none;padding:15px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--sub);font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
+    <button class="btn-setup-done" id="setupBtnDone" disabled style="flex:1;">설정을 완료해주세요</button>
+  </div>
+</div>
+
+<!-- 시작 화면 -->
+<div class="welcome-screen" id="welcomeScreen">
+  <div class="welcome-icon">☕</div>
+  <div class="welcome-title">주문 취합</div>
+  <div class="welcome-sub">팀별 커피 주문을 간편하게<br>취합하고 관리하세요</div>
+  <div class="welcome-steps">
+    <div class="welcome-step">
+      <div class="welcome-step-num">1</div>
+      <div>주문설정에서 <b>팀 링크</b>를 생성하고<br>단톡방에 공유하세요</div>
+    </div>
+    <div class="welcome-step">
+      <div class="welcome-step-num">2</div>
+      <div><b>가게</b>를 선택하고 마감시간,<br>주문잔수, 가격을 설정하세요</div>
+    </div>
+    <div class="welcome-step">
+      <div class="welcome-step-num">3</div>
+      <div>직원들이 각자 링크로 접속해<br><b>주문을 담으면</b> 자동 취합됩니다</div>
+    </div>
+  </div>
+  <button class="btn-welcome-start" id="btnWelcomeStart">📋 주문설정 시작하기</button>
+  <div class="welcome-version">주문 취합 v1.0</div>
+</div>
+
+<header>
+  <div class="header-row">
+    <h1>☕ 주문 취합 <span id="teamBadge" style="font-size:.75rem;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:99px;vertical-align:2px;display:none;"></span></h1>
+    <div style="display:flex;gap:6px;">
+      <button class="btn-admin-open order-hide" id="btnShowLinks" style="background:rgba(255,255,255,.25);">🔗 링크</button>
+      <button class="btn-admin-open order-hide" id="btnOrderOpen">📋 주문설정</button>
+      <button class="btn-admin-open order-hide" id="btnMenuOpen">🍽 메뉴수정</button>
+    </div>
+  </div>
+  <div class="header-row" style="margin-top:6px;align-items:center;">
+    <div>
+      <div class="date" id="todayDate"></div>
+      <div style="font-size:.72rem;opacity:.8;margin-top:2px;display:flex;align-items:center;gap:6px;">
+        <span id="sessionLabel" style="font-weight:700;opacity:.9;">-</span>
+        <button id="btnNewSession" class="order-hide" style="border:none;background:rgba(255,255,255,.2);color:#fff;font-size:.68rem;font-weight:700;padding:3px 7px;border-radius:6px;cursor:pointer;font-family:inherit;">➕ 새 주문</button>
+      </div>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncText">연결 중...</span>
+    </div>
+  </div>
+  <div class="brand-tabs" id="brandTabsWrap">
+    <button class="brand-tab active" data-brand="paik">빽다방</button>
+    <button class="brand-tab" data-brand="mega">메가커피</button>
+    <button class="brand-tab" data-brand="compose">컴포즈</button>
+  </div>
+</header>
+
+<!-- 마감 카운트다운 바 -->
+<div class="deadline-bar" id="deadlineBar">
+  <div class="deadline-inner">
+    <div class="deadline-top">
+      <span class="deadline-label" id="deadlineLabel">⏰ 주문 마감까지</span>
+      <span style="font-size:.72rem;opacity:.75;" id="deadlineEndTime"></span>
+    </div>
+    <div class="deadline-time" id="deadlineCountdown">--:--</div>
+    <div class="deadline-progress-bg" style="margin-top:8px;">
+      <div class="deadline-progress-fill" id="deadlineProgress" style="width:100%;"></div>
+    </div>
+  </div>
+</div>
+  <!-- 인원 현황 바 -->
+  <div class="headcount-bar" id="headcountBar">
+    <div class="hc-top">
+      <span class="hc-title">📋 주문 현황</span>
+      <div class="hc-nums">
+        <div class="hc-num-box">
+          <div class="hc-num done" id="hcDone">0</div>
+          <div class="hc-num-label">주문잔수</div>
+        </div>
+        <div class="hc-num-box">
+          <div class="hc-num pending" id="hcPending">0</div>
+          <div class="hc-num-label">미주문잔</div>
+        </div>
+        <div class="hc-num-box">
+          <div class="hc-num total" id="hcTotal">0</div>
+          <div class="hc-num-label">전체</div>
+        </div>
+      </div>
+    </div>
+    <div class="hc-progress-bg">
+      <div class="hc-progress-fill" id="hcProgressFill" style="width:0%;"></div>
+    </div>
+    <div class="hc-status" id="hcStatus">주문을 기다리는 중...</div>
+  </div>
+
+
+  <section class="card">
+    <h2 class="order-hide">주문 추가</h2>
+    <label for="inpName">이름</label>
+    <input type="text" id="inpName" placeholder="예: 김철수" maxlength="10" autocomplete="off">
+    <label>카테고리</label>
+    <div class="cat-scroll" id="catScroll"></div>
+    <label for="selMenu">메뉴</label>
+    <select id="selMenu"></select>
+    <div class="custom-fields" id="customFields">
+      <div class="row">
+        <input type="text" id="inpCustomName" placeholder="메뉴 이름 직접 입력">
+        <input type="text" id="inpCustomPrice" placeholder="가격 (숫자만)" inputmode="numeric">
+      </div>
+    </div>
+    <label>온도</label>
+    <div class="seg" id="tempSeg">
+      <button type="button" data-temp="ICE" class="on ice">ICE</button>
+      <button type="button" data-temp="HOT">HOT</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">샷 추가 <span class="opt-price" id="shotPriceLabel"></span></span>
+      <label class="toggle"><input type="checkbox" id="chkShot"><span class="knob"></span></label>
+    </div>
+    <label for="inpMemo">요청사항 (선택)</label>
+    <input type="text" id="inpMemo" placeholder="예: 연하게, 얼음 적게" maxlength="20" autocomplete="off">
+    <div class="qty-row">
+      <span class="qty-label">수량</span>
+      <div class="qty-ctrl">
+        <button class="qty-btn" id="btnQtyMinus" type="button">−</button>
+        <div class="qty-num" id="qtyNum">1</div>
+        <button class="qty-btn" id="btnQtyPlus" type="button">+</button>
+      </div>
+    </div>
+    <button class="btn-add" id="btnAdd">주문 담기</button>
+  </section>
+
+  <!-- 직원용: 내 주문 내역 -->
+  <div class="my-orders-wrap">
+    <h3>📋 내 주문 내역 <span id="myOrderCount" style="font-size:.72rem;font-weight:700;color:var(--sub);"></span></h3>
+    <div id="myOrderList"><div class="my-order-empty">아직 주문이 없습니다</div></div>
+  </div>
+
+  <section class="card order-hide">
+    <h2>주문 현황 <span class="count-badge" id="countBadge">0명</span></h2>
+    <div id="orderList"><div class="empty">아직 주문이 없습니다.</div></div>
+    <div class="list-actions">
+      <button class="btn-reset" id="btnReset">전체 초기화</button>
+    </div>
+  </section>
+
+  <p class="notice">※ 가격은 매장 상황에 따라 다를 수 있습니다.</p>
+</main>
+
+<div class="bottom-bar order-hide">
+  <div class="sum">
+    <div class="cups" id="barCups">0잔</div>
+    <div class="total" id="barTotal">0원</div>
+  </div>
+  <div style="display:flex;gap:6px;"><button class="btn-receipt" style="background:rgba(255,255,255,.2);color:#fff;" id="btnOpenReorder" class="order-hide">🔁 재주문</button><button class="btn-receipt" id="btnOpenReceipt" class="order-hide">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" class="order-hide" style="display:none;">🗂 통합주문서</button></div>
+</div>
+
+<!-- 영수증 모달 -->
+<div class="modal-bg" id="modalReceipt">
+  <div class="modal-sheet receipt">
+    <div class="receipt-head">
+      <div class="shop" id="rcShop"></div>
+      <div class="meta" id="rcMeta"></div>
+    </div>
+    <div class="receipt-body" id="rcBody"></div>
+    <div class="receipt-total"><span>합계</span><span id="rcTotal">0원</span></div>
+    <div class="receipt-btns">
+      <button class="btn-copy" id="btnCopy">주문서 복사</button>
+      <button class="btn-close-r" id="btnCloseReceipt">닫기</button>
+    </div>
+    <div class="order-app-btns">
+      <button class="btn-kakaomap" id="btnKakaoMap">🗺 매장 찾기</button>
+      <button class="btn-store-app" id="btnStoreApp">📱 가게 앱 열기</button>
+    </div>
+    <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
+  </div>
+</div>
+
+<!-- 통합주문서 모달 -->
+<div class="modal-bg" id="modalAllReceipt">
+  <div class="modal-sheet receipt">
+    <div class="receipt-head">
+      <div class="shop" id="arcShop">🗂 통합 주문서</div>
+      <div class="meta" id="arcMeta"></div>
+    </div>
+    <!-- 가게별 섹션 -->
+    <div id="arcBody"></div>
+    <!-- 전체 합계 -->
+    <div class="receipt-total" style="border-top:2px solid var(--line);margin-top:4px;">
+      <span>전체 합계</span><span id="arcTotal">0원</span>
+    </div>
+    <div class="receipt-btns">
+      <button class="btn-copy" id="btnCopyAll">통합주문서 복사</button>
+      <button class="btn-close-r" id="btnCloseAllReceipt">닫기</button>
+    </div>
+    <div class="order-app-btns">
+      <button class="btn-kakaomap" id="btnKakaoMapAll">🗺 매장 찾기</button>
+      <button class="btn-store-app" id="btnStoreAppAll">📱 가게 앱 열기</button>
+    </div>
+    <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
+  </div>
+</div>
+
+<!-- 주문설정 모달 -->
+<div class="modal-bg" id="modalOrder">
+  <div class="modal-sheet">
+    <div class="admin-header">
+      <h2>📋 주문설정</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btnChangePinFromOrder" style="border:none;background:#EEF2FF;color:#3730A3;font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">🔑 PIN 변경</button>
+        <button class="btn-admin-close" id="btnOrderClose">✕</button>
+      </div>
+    </div>
+
+    <!-- 현재설정 표시용 hidden 요소 -->
+    <div style="display:none;">
+      <div id="currentStoreBox"><span id="currentStoreIcon"></span><span id="currentStoreVal"></span></div>
+      <div id="currentDeadlineBox"><span id="currentDeadlineVal"></span></div>
+      <div id="currentHeadcountBox"><span id="currentHeadcountVal"></span></div>
+      <button id="btnUnlockStore"></button>
+    </div>
+    <!-- 현재 설정 요약 -->
+    <div id="orderSettingSummary" style="background:#F8F7F4;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.8;">
+      <div style="font-weight:800;margin-bottom:4px;">현재 설정</div>
+      <div id="summaryStore">🏪 가게: <span style="color:var(--sub);">설정 없음</span></div>
+      <div id="summaryDeadline">⏰ 마감: <span style="color:var(--sub);">설정 없음</span></div>
+      <div id="summaryHeadcount">📋 잔수: <span style="color:var(--sub);">설정 없음</span></div>
+      <div id="summaryPriceLimit">💰 가격: <span style="color:var(--sub);">제한 없음</span></div>
+    </div>
+
+    <!-- 주문설정 탭 -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-otab="store">🏪 가게 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
+      <button class="admin-tab" data-otab="deadline">⏰ 시간</button>
+      <button class="admin-tab" data-otab="headcount">👥 잔수</button>
+      <button class="admin-tab" data-otab="pricelimit">💰 가격</button>
+    </div>
+
+    <!-- 패널: 가게선택 (다중선택) -->
+    <div class="admin-panel show" id="opanelStore">
+      <div style="font-size:.78rem;color:var(--sub);margin-bottom:10px;">여러 가게 선택 가능 · 미선택 시 전체 표시</div>
+      <div class="store-card" data-store="paik" id="storeCardPaik">
+        <div class="store-icon">🐔</div>
+        <div class="store-info">
+          <div class="store-name">빽다방</div>
+          <div class="store-desc">백종원의 빽다방 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+      <div class="store-card" data-store="mega" id="storeCardMega">
+        <div class="store-icon">☕</div>
+        <div class="store-info">
+          <div class="store-name">메가커피</div>
+          <div class="store-desc">메가MGC커피 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+      <div class="store-card" data-store="compose" id="storeCardCompose">
+        <div class="store-icon">🎵</div>
+        <div class="store-info">
+          <div class="store-name">컴포즈커피</div>
+          <div class="store-desc">컴포즈커피 · 아메리카노 2,000원~</div>
+        </div>
+        <div class="store-check">✅</div>
+      </div>
+    </div>
+
+    <!-- 패널: 마감시간 -->
+    <div class="admin-panel" id="opanelDeadline">
+      <div class="time-setting-box">
+        <h3>⏰ 주문 마감시간</h3>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 설정</div>
+        <div class="preset-btns" id="presetBtns">
+          <button class="preset-btn" data-min="10">+10분</button>
+          <button class="preset-btn" data-min="20">+20분</button>
+          <button class="preset-btn" data-min="30">+30분</button>
+          <button class="preset-btn" data-min="60">+1시간</button>
+        </div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">시간 직접 입력</div>
+        <div class="time-row">
+          <label>마감 시각</label>
+          <input type="time" class="time-inp" id="inpDeadlineTime">
+        </div>
+        <button class="btn-clear-deadline" id="btnClearDeadline" style="margin-top:8px;">마감시간 해제</button>
+      </div>
+    </div>
+
+    <!-- 패널: 주문잔수 -->
+    <div class="admin-panel" id="opanelHeadcount">
+      <div class="headcount-setting-box">
+        <h3>📋 총 주문 잔 수</h3>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
+        <div class="hc-quick-btns">
+          <button class="hc-quick-btn" data-hc="10">10잔</button>
+          <button class="hc-quick-btn" data-hc="20">20잔</button>
+          <button class="hc-quick-btn" data-hc="30">30잔</button>
+          <button class="hc-quick-btn" data-hc="40">40잔</button>
+          <button class="hc-quick-btn" data-hc="50">50잔</button>
+        </div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
+        <div class="hc-inp-row">
+          <input type="number" class="hc-inp" id="inpHeadcount" min="1" max="200" placeholder="예: 40">
+          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">잔</span>
+        </div>
+        <button class="btn-clear-headcount" id="btnClearHeadcount" style="margin-top:8px;">잔 수 설정 해제</button>
+      </div>
+    </div>
+
+    <!-- 패널: 1인당 주문가격 한도 -->
+    <div class="admin-panel" id="opanelPricelimit">
+      <div class="price-limit-box">
+        <h3>💰 1인당 주문가격 한도</h3>
+        <div style="font-size:.75rem;color:#92400E;margin-bottom:8px;">설정 금액 이하 메뉴만 선택가능합니다.</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
+        <div class="price-limit-presets">
+          <button class="price-limit-preset" data-pl="2000">2,000원</button>
+          <button class="price-limit-preset" data-pl="2500">2,500원</button>
+          <button class="price-limit-preset" data-pl="3000">3,000원</button>
+          <button class="price-limit-preset" data-pl="3500">3,500원</button>
+          <button class="price-limit-preset" data-pl="4000">4,000원</button>
+          <button class="price-limit-preset" data-pl="5000">5,000원</button>
+        </div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">직접 입력</div>
+        <div class="price-limit-inp-row">
+          <input type="number" class="price-limit-inp" id="inpPriceLimit" min="0" step="100" placeholder="예: 3000">
+          <span style="font-size:.9rem;font-weight:700;color:var(--sub);">원</span>
+        </div>
+        <button class="btn-clear-price-limit" id="btnClearPriceLimit">가격 한도 해제</button>
+      </div>
+    </div>
+
+
+
+    <!-- 하단 통합 저장 버튼 -->
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button id="btnSaveOrderSettings" style="flex:1;padding:14px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;">✅ 설정 저장</button>
+      <button id="btnResetOrderSettings" style="flex:none;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--sub);font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">🔄 전체 해제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 메뉴수정 모달 -->
+<div class="modal-bg" id="modalMenu">
+  <div class="modal-sheet">
+    <div class="admin-header">
+      <h2>🍽 메뉴수정</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btnChangePinFromMenu" style="border:none;background:#EEF2FF;color:#3730A3;font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">🔑 PIN 변경</button>
+        <button class="btn-admin-close" id="btnMenuClose">✕</button>
+      </div>
+    </div>
+
+    <!-- DB 새로고침 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:#16A34A;">🔄 DB 자동 연동 중</div>
+        <div style="font-size:.72rem;color:#4ADE80;margin-top:2px;" id="menuLastUpdated">마지막 업데이트: 확인 중...</div>
+      </div>
+      <button id="btnRefreshMenus" style="border:none;background:#16A34A;color:#fff;font-size:.78rem;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;">지금 새로고침</button>
+    </div>
+
+    <!-- 메뉴수정 탭 -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-mtab="add">➕ 메뉴 추가</button>
+      <button class="admin-tab" data-mtab="del">🗑 메뉴 삭제</button>
+      <button class="admin-tab" data-mtab="price">💰 가격 수정</button>
+    </div>
+
+    <!-- 패널: 메뉴 추가 -->
+    <div class="admin-panel show" id="mpanelAdd">
+      <div class="add-menu-form">
+        <h3>새 메뉴 추가</h3>
+        <div class="form-row">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">브랜드</div>
+            <select class="inp-sm" id="addBrand">
+              <option value="paik">빽다방</option>
+              <option value="mega">메가커피</option>
+              <option value="compose">컴포즈</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">카테고리</div>
+            <select class="inp-sm" id="addCat"></select>
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">메뉴 이름</div>
+          <input type="text" class="inp-sm" id="addName" placeholder="예: 흑당버블라떼" maxlength="20">
+        </div>
+        <div class="form-row">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">HOT 가격 (없으면 빈칸)</div>
+            <input type="number" class="inp-sm" id="addHot" placeholder="예: 3500" min="0" step="100">
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:4px;">ICE 가격 (없으면 빈칸)</div>
+            <input type="number" class="inp-sm" id="addIce" placeholder="예: 3500" min="0" step="100">
+          </div>
+        </div>
+        <button class="btn-form-add" id="btnAddMenu">메뉴 추가</button>
+      </div>
+    </div>
+
+    <!-- 패널: 메뉴 삭제 -->
+    <div class="admin-panel" id="mpanelDel">
+      <div style="margin-bottom:10px;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
+        <div class="admin-tabs" id="delBrandTabs" style="margin-bottom:0;">
+          <button class="admin-tab active" data-dbrand="paik">빽다방</button>
+          <button class="admin-tab" data-dbrand="mega">메가커피</button>
+          <button class="admin-tab" data-dbrand="compose">컴포즈</button>
+        </div>
+      </div>
+      <div id="delMenuList"></div>
+    </div>
+
+    <!-- 패널: 가격 수정 -->
+    <div class="admin-panel" id="mpanelPrice">
+      <div style="margin-bottom:10px;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--sub);margin-bottom:6px;">브랜드 선택</div>
+        <div class="admin-tabs" id="adminBrandTabs" style="margin-bottom:0;">
+          <button class="admin-tab active" data-abrand="paik">빽다방</button>
+          <button class="admin-tab" data-abrand="mega">메가커피</button>
+          <button class="admin-tab" data-abrand="compose">컴포즈</button>
+        </div>
+      </div>
+
+      <table class="price-table" id="priceTable">
+        <thead><tr><th>메뉴</th><th style="text-align:right;">HOT</th><th style="text-align:right;">ICE</th></tr></thead>
+        <tbody id="priceTableBody"></tbody>
+      </table>
+      <button class="btn-save-prices" id="btnSavePrices">✅ 가격 저장</button>
+      <div class="save-notice">저장하면 이 기기의 모든 메뉴 가격이 업데이트됩니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 링크 모달 -->
+<div class="modal-bg" id="modalLinks">
+  <div class="modal-sheet">
+    <div class="admin-header">
+      <h2>🔗 팀 링크</h2>
+      <button class="btn-admin-close" id="btnLinksClose">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--sub);margin-bottom:12px;">각 팀 단톡방에 링크를 공유하세요.</div>
+    <div id="linkModalList"><div class="empty">팀 링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div></div>
+  </div>
+</div>
+
+<!-- PIN 모달 -->
+<div class="pin-modal-bg" id="pinModalBg">
+  <div class="pin-box">
+    <h3>🔒 관리자 인증</h3>
+    <div class="pin-sub" id="pinSub">4자리 PIN을 입력하세요</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
+    <div class="pin-keypad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key del" id="pinDelKey">⌫</button>
+    </div>
+    <button class="btn-pin-cancel" id="btnPinCancel">취소</button>
+    <div class="pin-change-row">
+      <button class="btn-pin-change" id="btnPinChange">PIN 변경</button>
+    </div>
+  </div>
+</div>
+
+<!-- 주문 수정 모달 -->
+<div class="modal-bg" id="modalEditOrder">
+  <div class="modal-sheet">
+    <div class="admin-header">
+      <h2>✏️ 주문 수정</h2>
+      <button class="btn-admin-close" id="btnEditClose">✕</button>
+    </div>
+    <span class="edit-field-label">이름</span>
+    <input type="text" id="editName" maxlength="10" autocomplete="off">
+
+    <span class="edit-field-label">카테고리</span>
+    <div class="cat-scroll" id="editCatScroll"></div>
+
+    <span class="edit-field-label">메뉴</span>
+    <select id="editMenu"></select>
+
+    <span class="edit-field-label">온도</span>
+    <div class="edit-seg" id="editTempSeg">
+      <button type="button" data-et="ICE">ICE</button>
+      <button type="button" data-et="HOT">HOT</button>
+    </div>
+
+    <div class="opt-row" style="margin-top:12px;">
+      <span class="opt-label">샷 추가 <span class="opt-price" id="editShotLabel"></span></span>
+      <label class="toggle"><input type="checkbox" id="editShot"><span class="knob"></span></label>
+    </div>
+
+    <span class="edit-field-label">요청사항</span>
+    <input type="text" id="editMemo" maxlength="20" placeholder="예: 연하게, 얼음 적게" autocomplete="off">
+
+    <button class="btn-edit-save" id="btnEditSave">✅ 수정 저장</button>
+    <button class="btn-edit-cancel" id="btnEditCancel">취소</button>
+  </div>
+</div>
+
+<!-- 재주문 모달 -->
+<div class="modal-bg" id="modalReorder">
+  <div class="modal-sheet" style="max-height:88vh;">
+    <div class="admin-header">
+      <h2>🔁 재주문</h2>
+      <button class="btn-admin-close" id="btnReorderClose">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--sub);margin-bottom:10px;">날짜를 선택하고 가져올 주문을 체크하세요.</div>
+    <!-- 날짜 탭 -->
+    <div class="reorder-date-tabs" id="reorderDateTabs"></div>
+    <!-- 주문 목록 -->
+    <div id="reorderList"><div class="reorder-empty">날짜를 선택해주세요</div></div>
+    <!-- 하단 버튼 -->
+    <div class="reorder-actions">
+      <button class="btn-reorder-all" id="btnReorderSelectAll">전체선택</button>
+      <button class="btn-reorder-confirm" id="btnReorderConfirm">✅ 선택 주문 가져오기 <span id="reorderSelCount"></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   Supabase 설정
+═══════════════════════════════════════ */
+const SUPA_URL='https://dsootbcqnifiqyajivrx.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzb290YmNxbmlmaXF5YWppdnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMjYwMzcsImV4cCI6MjA5MTYwMjAzN30.f3b4dkWnYz02yQzsuljD3PuEq9LO7tvzzt1k_Ko9uHs';
+const HEADERS={'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=representation'};
+
+/* ═══════════════════════════════════════
+   기본 메뉴 데이터 (파일 초기값)
+═══════════════════════════════════════ */
+const DEFAULT_BRANDS = {
+  paik:{label:'빽다방',shotPrice:600,
+    cats:['전체','커피','음료/에이드','라떼','빽스치노'],
+    menus:[
+      {name:'아메리카노',cat:'커피',hot:1700,ice:2000},
+      {name:'빽사이즈 아메리카노',cat:'커피',hot:null,ice:3300},
+      {name:'원조커피 (믹스커피)',cat:'커피',hot:null,ice:3500},
+      {name:'에스프레소',cat:'커피',hot:1500,ice:null},
+      {name:'더블 에스프레소',cat:'커피',hot:2000,ice:null},
+      {name:'생크림 아메리카노',cat:'커피',hot:null,ice:4200},
+      {name:'카페라떼',cat:'라떼',hot:3200,ice:3200},
+      {name:'생크림 카페라떼',cat:'라떼',hot:null,ice:4500},
+      {name:'바닐라라떼',cat:'라떼',hot:3800,ice:3800},
+      {name:'연유라떼',cat:'라떼',hot:3800,ice:3800},
+      {name:'헤이즐넛라떼',cat:'라떼',hot:3800,ice:3800},
+      {name:'카라멜라떼',cat:'라떼',hot:3800,ice:3800},
+      {name:'초코라떼',cat:'라떼',hot:3500,ice:3500},
+      {name:'딸기라떼',cat:'라떼',hot:null,ice:3800},
+      {name:'미숫가루라떼',cat:'라떼',hot:null,ice:3800},
+      {name:'고구마라떼',cat:'라떼',hot:3800,ice:3800},
+      {name:'아샷추 (아이스티+샷)',cat:'음료/에이드',hot:null,ice:3400},
+      {name:'복숭아 아이스티',cat:'음료/에이드',hot:null,ice:2500},
+      {name:'청포도에이드',cat:'음료/에이드',hot:null,ice:3200},
+      {name:'쿨라임에이드',cat:'음료/에이드',hot:null,ice:3200},
+      {name:'토마토주스',cat:'음료/에이드',hot:null,ice:3500},
+      {name:'미숫가루',cat:'음료/에이드',hot:null,ice:2500},
+      {name:'딸기스무디',cat:'음료/에이드',hot:null,ice:3800},
+      {name:'바닐라 빽스치노',cat:'빽스치노',hot:null,ice:4000},
+      {name:'초코 빽스치노',cat:'빽스치노',hot:null,ice:4000},
+      {name:'카라멜 빽스치노',cat:'빽스치노',hot:null,ice:4000},
+      {name:'딸기 빽스치노',cat:'빽스치노',hot:null,ice:4200},
+    ]},
+  mega:{label:'메가커피',shotPrice:600,
+    cats:['전체','커피','라떼','논커피','프라페/스무디','에이드/주스'],
+    menus:[
+      {name:'아메리카노',cat:'커피',hot:1700,ice:2000},
+      {name:'할메가커피 (믹스커피)',cat:'커피',hot:null,ice:2800},
+      {name:'왕할메가커피',cat:'커피',hot:null,ice:3200},
+      {name:'메가리카노 (대용량)',cat:'커피',hot:null,ice:3300},
+      {name:'헤이즐넛 아메리카노',cat:'커피',hot:2200,ice:2400},
+      {name:'콜드브루',cat:'커피',hot:null,ice:3000},
+      {name:'에스프레소',cat:'커피',hot:1500,ice:null},
+      {name:'카페라떼',cat:'라떼',hot:3000,ice:3300},
+      {name:'바닐라라떼',cat:'라떼',hot:3700,ice:3900},
+      {name:'카라멜마끼아또',cat:'라떼',hot:3700,ice:3900},
+      {name:'흑당라떼',cat:'라떼',hot:null,ice:3300},
+      {name:'흑당버블라떼',cat:'라떼',hot:null,ice:3700},
+      {name:'초코라떼',cat:'라떼',hot:3300,ice:3500},
+      {name:'오레오초코라떼',cat:'라떼',hot:null,ice:3900},
+      {name:'녹차라떼',cat:'라떼',hot:3300,ice:3500},
+      {name:'고구마라떼',cat:'라떼',hot:3300,ice:3500},
+      {name:'딸기라떼',cat:'라떼',hot:null,ice:3700},
+      {name:'토피넛라떼',cat:'라떼',hot:3600,ice:3800},
+      {name:'곡물라떼',cat:'라떼',hot:3300,ice:3500},
+      {name:'복숭아 아이스티',cat:'논커피',hot:null,ice:2500},
+      {name:'왕메가 아이스티',cat:'논커피',hot:null,ice:4700},
+      {name:'미숫가루',cat:'논커피',hot:null,ice:2800},
+      {name:'바닐라 프라페',cat:'프라페/스무디',hot:null,ice:3900},
+      {name:'초코 프라페',cat:'프라페/스무디',hot:null,ice:3900},
+      {name:'쿠키크림 프라페',cat:'프라페/스무디',hot:null,ice:4300},
+      {name:'딸기 스무디',cat:'프라페/스무디',hot:null,ice:4000},
+      {name:'청포도에이드',cat:'에이드/주스',hot:null,ice:3300},
+      {name:'레몬에이드',cat:'에이드/주스',hot:null,ice:3300},
+      {name:'자몽에이드',cat:'에이드/주스',hot:null,ice:3300},
+      {name:'수박주스',cat:'에이드/주스',hot:null,ice:3800},
+    ]},
+  compose:{label:'컴포즈커피',shotPrice:500,
+    cats:['전체','커피/더치','논커피 라떼','프라페/스무디','에이드/주스','밀크쉐이크'],
+    menus:[
+      {name:'아메리카노',cat:'커피/더치',hot:1700,ice:2000},
+      {name:'빅포즈 아메리카노 (대용량)',cat:'커피/더치',hot:null,ice:3500},
+      {name:'에스프레소',cat:'커피/더치',hot:1500,ice:null},
+      {name:'카푸치노',cat:'커피/더치',hot:3200,ice:null},
+      {name:'카페모카',cat:'커피/더치',hot:3500,ice:3500},
+      {name:'카라멜마끼아또',cat:'커피/더치',hot:3500,ice:3500},
+      {name:'콜드브루',cat:'커피/더치',hot:null,ice:3300},
+      {name:'콜드브루 크림',cat:'커피/더치',hot:null,ice:4200},
+      {name:'아인슈페너',cat:'커피/더치',hot:null,ice:4200},
+      {name:'아인슈페너라떼',cat:'커피/더치',hot:null,ice:4200},
+      {name:'카페라떼',cat:'논커피 라떼',hot:3000,ice:3000},
+      {name:'바닐라라떼',cat:'논커피 라떼',hot:3500,ice:3500},
+      {name:'헤이즐넛라떼',cat:'논커피 라떼',hot:3500,ice:3500},
+      {name:'흑당라떼',cat:'논커피 라떼',hot:null,ice:3800},
+      {name:'달고나라떼',cat:'논커피 라떼',hot:null,ice:4000},
+      {name:'콜드브루 라떼',cat:'논커피 라떼',hot:null,ice:3800},
+      {name:'초코라떼',cat:'논커피 라떼',hot:3300,ice:3300},
+      {name:'쿠키앤크림라떼',cat:'논커피 라떼',hot:3800,ice:3800},
+      {name:'녹차라떼',cat:'논커피 라떼',hot:3500,ice:3500},
+      {name:'아샷추 (아이스티+샷)',cat:'논커피 라떼',hot:null,ice:3500},
+      {name:'돌체라떼',cat:'논커피 라떼',hot:3800,ice:3800},
+      {name:'바닐라 프라페',cat:'프라페/스무디',hot:null,ice:4500},
+      {name:'초코 프라페',cat:'프라페/스무디',hot:null,ice:4500},
+      {name:'딸기 스무디',cat:'프라페/스무디',hot:null,ice:4500},
+      {name:'망고 스무디',cat:'프라페/스무디',hot:null,ice:4500},
+      {name:'복숭아 아이스티',cat:'에이드/주스',hot:null,ice:2500},
+      {name:'자몽에이드',cat:'에이드/주스',hot:null,ice:3500},
+      {name:'청포도에이드',cat:'에이드/주스',hot:null,ice:3500},
+      {name:'레몬에이드',cat:'에이드/주스',hot:null,ice:3500},
+      {name:'오렌지주스',cat:'에이드/주스',hot:null,ice:3500},
+      {name:'플레인 밀크쉐이크',cat:'밀크쉐이크',hot:null,ice:4700},
+      {name:'딸기 밀크쉐이크',cat:'밀크쉐이크',hot:null,ice:5200},
+      {name:'초코 밀크쉐이크',cat:'밀크쉐이크',hot:null,ice:5200},
+    ]},
+};
+
+/* ── localStorage에서 커스텀 메뉴 데이터 로드/저장 ── */
+const LS_MENU_KEY = 'coffeeMenuData_v2';
+const LS_SESSION_KEY = 'coffeeOrderSession_v1';
+const LS_MENU_TS_KEY = 'coffeeMenuFetchedAt_v1'; // DB 마지막 fetch 시각
+const MENU_CACHE_MIN = 60; // 60분 캐시
+
+function loadMenuData(){
+  try{
+    const raw = localStorage.getItem(LS_MENU_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_BRANDS));
+}
+function saveMenuData(){
+  localStorage.setItem(LS_MENU_KEY, JSON.stringify(BRANDS));
+  localStorage.setItem(LS_MENU_TS_KEY, Date.now().toString());
+}
+function isMenuCacheStale(){
+  const ts = parseInt(localStorage.getItem(LS_MENU_TS_KEY)||'0', 10);
+  return Date.now() - ts > MENU_CACHE_MIN * 60 * 1000;
+}
+
+let BRANDS = loadMenuData();
+
+/* ── DB에서 메뉴 불러오기 ── */
+async function fetchMenusFromDB(force=false){
+  // 캐시가 신선하면 스킵 (강제 갱신이 아닌 경우)
+  if(!force && !isMenuCacheStale()){
+    console.log('[메뉴] 캐시 사용 ('+MENU_CACHE_MIN+'분 이내)');
+    return;
+  }
+
+  setSyncStatus('loading', '메뉴 불러오는 중...');
+  try{
+    const data = await sbFetch(
+      'menu_prices?select=brand,name,cat,hot_price,ice_price,shot_price&order=brand,cat,name'
+    );
+
+    if(!data || data.length === 0){
+      console.warn('[메뉴] DB에 데이터 없음 → 기본 메뉴 사용');
+      setSyncStatus('ok', 'DB 연결됨');
+      return;
+    }
+
+    // DB 데이터를 BRANDS 구조로 변환
+    const newBrands = JSON.parse(JSON.stringify(DEFAULT_BRANDS)); // 구조 복사
+
+    // 브랜드별로 그룹화
+    const grouped = {};
+    data.forEach(row => {
+      if(!grouped[row.brand]) grouped[row.brand] = [];
+      grouped[row.brand].push(row);
+    });
+
+    // 각 브랜드 메뉴 업데이트
+    Object.entries(grouped).forEach(([b, rows]) => {
+      if(!newBrands[b]) return;
+
+      // shot_price: 브랜드 첫 번째 행에서 가져옴
+      const sp = rows[0]?.shot_price;
+      if(sp) newBrands[b].shotPrice = sp;
+
+      // 메뉴 목록 재구성
+      // 1) DB에 있는 메뉴로 기존 메뉴 가격 업데이트
+      // 2) DB에 없는 메뉴는 유지 (관리자가 직접 추가한 메뉴)
+      // 3) DB에만 있는 새 메뉴는 추가
+
+      const dbMenuMap = {};
+      rows.forEach(r => { dbMenuMap[r.name] = r; });
+
+      // 기존 메뉴 가격 업데이트
+      newBrands[b].menus.forEach(m => {
+        if(dbMenuMap[m.name]){
+          const dbRow = dbMenuMap[m.name];
+          m.hot = dbRow.hot_price;
+          m.ice = dbRow.ice_price;
+          m.cat = dbRow.cat || m.cat;
+        }
+      });
+
+      // DB에만 있는 신규 메뉴 추가
+      rows.forEach(r => {
+        const exists = newBrands[b].menus.find(m => m.name === r.name);
+        if(!exists){
+          // 카테고리가 cats 목록에 없으면 추가
+          if(r.cat && !newBrands[b].cats.includes(r.cat)){
+            newBrands[b].cats.push(r.cat);
+          }
+          newBrands[b].menus.push({
+            name: r.name,
+            cat: r.cat || '기타',
+            hot: r.hot_price,
+            ice: r.ice_price,
+          });
+        }
+      });
+    });
+
+    // 전역 BRANDS 업데이트
+    Object.keys(newBrands).forEach(b => { BRANDS[b] = newBrands[b]; });
+    saveMenuData();
+
+    // UI 갱신
+    applyBrandTheme();
+    renderCats();
+    renderMenuSelect();
+    // 관리자 모달이 열려 있으면 테이블도 갱신
+    if($('modalMenu').classList.contains('show')){
+      renderPriceTable();
+      renderDelMenuList();
+    }
+
+    setSyncStatus('ok', 'DB 연결됨');
+    console.log(`[메뉴] DB에서 ${data.length}개 메뉴 로드 완료`);
+
+  }catch(e){
+    console.error('[메뉴] DB 로드 실패:', e.message);
+    setSyncStatus('ok', 'DB 연결됨'); // 메뉴 로드 실패해도 앱은 동작
+  }
+}
+
+/* ═══════════════════════════════════════
+   앱 상태
+═══════════════════════════════════════ */
+const CUSTOM='__custom__';
+let brand='paik', curCat='전체', curTemp='ICE';
+let orders=[], allOrders=[], sessionId='', sessionCount=1, isAdding=false;
+let teamName = ''; // URL ?team=XXX 에서 읽어온 팀 이름
+let orderMode = 'admin'; // 'admin' | 'order' (직원용)
+let pageMode = 'setup';  // 'setup' | 'admin' | 'order'
+let cfgId = '';          // 설정 ID (?cfg=xxx)
+let lastOrderName = ''; // 직원이 마지막으로 입력한 이름
+let maxPricePerOrder = 0; // 1인당 주문가격 한도 (0=제한없음)
+let adminBrand='paik', delBrand='paik';
+
+/* ── 세션 ── */
+function todayBase(){
+  const d=new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadTeamFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get('team');
+  if(t) teamName = decodeURIComponent(t).trim();
+  const m = params.get('mode');
+  if(m === 'order') orderMode = 'order';
+  else orderMode = 'admin';
+  // cfg 파라미터 파싱
+  const c = params.get('cfg');
+  if(c) cfgId = c;
+
+  if(!teamName){
+    pageMode = 'setup';
+    document.body.classList.add('mode-setup');
+  } else if(orderMode === 'order'){
+    pageMode = 'order';
+    document.body.classList.add('mode-order');
+  } else {
+    pageMode = 'admin';
+  }
+}
+
+function getTeamKey(){
+  // 팀별 localStorage 키 분리
+  return teamName ? LS_SESSION_KEY + '_' + teamName : LS_SESSION_KEY;
+}
+
+function loadSession(){
+  loadTeamFromURL();
+  try{
+    const s=JSON.parse(localStorage.getItem(getTeamKey())||'{}');
+    brand=s.brand||'paik';
+    // 팀이 다르면 세션 초기화
+    sessionId=s.sessionId||todayBase()+'_'+(teamName||'')+'_1';
+    sessionCount=s.count||1;
+  }catch(e){ sessionId=todayBase()+'_'+(teamName||'')+'_1'; sessionCount=1; }
+}
+function saveSession(){
+  localStorage.setItem(getTeamKey(),JSON.stringify({brand,sessionId,count:sessionCount}));
+}
+function sessionLabel(){
+  return (teamName ? teamName+' · ' : '') + sessionCount+'회차';
+}
+function newSession(){
+  sessionCount = (sessionCount||1) + 1;
+  sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
+  saveSession();
+  $('sessionLabel').textContent = sessionLabel();
+  orders=[]; renderOrders(); fetchOrders();
+  toast((teamName?teamName+' ':'') + sessionCount+'회차 주문을 시작합니다');
+}
+
+/* ═══════════════════════════════════════
+   Supabase REST
+═══════════════════════════════════════ */
+async function sbFetch(path,options={}){
+  const {headers:extraHeaders, ...restOptions} = options;
+  const mergedHeaders = {...HEADERS, ...(extraHeaders||{})};
+  const res=await fetch(SUPA_URL+'/rest/v1/'+path,{headers:mergedHeaders,...restOptions});
+  if(!res.ok) throw new Error(await res.text());
+  const t=await res.text(); return t?JSON.parse(t):[];
+}
+async function fetchOrders(){
+  setSyncStatus('loading','불러오는 중...');
+  try{
+    // 현재 브랜드 주문 (화면 표시용)
+    const data=await sbFetch(`coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&order=created_at.asc`);
+    orders=data;
+    // 세션 전체 브랜드 주문 (인원 카운팅용)
+    const allData=await sbFetch(`coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=created_at.asc`);
+    allOrders=allData;
+    renderOrders();
+    renderMyOrders(); // 직원용 내 주문 갱신
+    setSyncStatus('ok','DB 연결됨');
+  }catch(e){ setSyncStatus('err','연결 실패'); toast('DB 오류: '+e.message); }
+}
+async function insertOrder(row){ return sbFetch('coffee_orders',{method:'POST',body:JSON.stringify(row)}); }
+async function deleteOrder(id){ return sbFetch(`coffee_orders?id=eq.${id}`,{method:'DELETE'}); }
+async function deleteSession(){ return sbFetch(`coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,{method:'DELETE'}); }
+
+/* ── Realtime ── */
+function connectRealtime(){
+  const ws=new WebSocket(SUPA_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SUPA_KEY+'&vsn=1.0.0');
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({topic:'realtime:public:coffee_orders',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'1'}));
+    setSyncStatus('ok','DB 연결됨');
+  };
+  ws.onmessage=e=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
+        const tbl = msg.payload?.table || msg.topic || '';
+        if(tbl.includes('session_settings')){
+          // 설정 전체 재로드
+          Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]).then(()=>{
+            if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
+            renderHeadcountBar();
+            renderMenuSelect(); // 가격 한도 반영
+            applyBrandTheme();  // 가게 설정 반영
+          });
+        } else {
+          fetchOrders();
+        }
+      }
+    }catch(err){}
+  };
+  ws.onerror=()=>setSyncStatus('err','연결 오류');
+  ws.onclose=()=>{ setSyncStatus('err','재연결 중...'); setTimeout(connectRealtime,3000); };
+  setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); },30000);
+}
+
+/* ═══════════════════════════════════════
+   UI 헬퍼
+═══════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+const won=n=>n.toLocaleString('ko-KR')+'원';
+function setSyncStatus(st,txt){ $('syncDot').className='sync-dot '+st; $('syncText').textContent=txt; }
+
+function applyBrandTheme(){
+  document.body.className='brand-'+brand;
+  document.querySelectorAll('.brand-tab').forEach(b=>b.classList.toggle('active',b.dataset.brand===brand));
+  $('shotPriceLabel').textContent='(+'+BRANDS[brand].shotPrice.toLocaleString()+'원)';
+}
+function renderCats(){
+  const s=$('catScroll'); s.innerHTML='';
+  BRANDS[brand].cats.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cat-btn'+(c===curCat?' active':''); b.textContent=c;
+    b.addEventListener('click',()=>{ curCat=c; renderCats(); renderMenuSelect(); });
+    s.appendChild(b);
+  });
+}
+function renderMenuSelect(){
+  const menus=BRANDS[brand].menus;
+  const filtered=curCat==='전체'?menus:menus.filter(m=>m.cat===curCat);
+  const sel=$('selMenu'); sel.innerHTML='';
+  filtered.forEach(m=>{
+    const ri=menus.indexOf(m);
+    const prices=[];
+    if(m.hot!=null) prices.push('HOT '+m.hot.toLocaleString());
+    if(m.ice!=null) prices.push('ICE '+m.ice.toLocaleString());
+    const opt=document.createElement('option');
+    // 가격 한도 초과 여부 확인
+    const minPrice = Math.min(...[m.hot,m.ice].filter(p=>p!=null));
+    const overLimit = maxPricePerOrder > 0 && minPrice > maxPricePerOrder;
+    opt.value=ri;
+    opt.textContent=(overLimit?'🚫 ':'')+m.name+' · '+prices.join(' / ')+(overLimit?' (한도초과)':'');
+    if(overLimit){ opt.disabled=true; opt.style.color='#9CA3AF'; }
+    sel.appendChild(opt);
+  });
+  const optC=document.createElement('option'); optC.value=CUSTOM; optC.textContent='➕ 직접 입력 (다른 메뉴)';
+  sel.appendChild(optC); onMenuChange();
+}
+function onMenuChange(){
+  const isC=$('selMenu').value===CUSTOM;
+  $('customFields').classList.toggle('show',isC);
+  if(!isC){
+    const m=BRANDS[brand].menus[+$('selMenu').value];
+    if(m){
+      if(curTemp==='HOT'&&m.hot==null) setTemp('ICE');
+      if(curTemp==='ICE'&&m.ice==null) setTemp('HOT');
+      // 한도 초과 시 다른 온도로 자동 전환
+      if(maxPricePerOrder>0){
+        const hotOk = m.hot!=null && m.hot+(($('chkShot').checked?BRANDS[brand].shotPrice:0)) <= maxPricePerOrder;
+        const iceOk = m.ice!=null && m.ice+(($('chkShot').checked?BRANDS[brand].shotPrice:0)) <= maxPricePerOrder;
+        if(curTemp==='HOT'&&!hotOk&&iceOk) setTemp('ICE');
+        if(curTemp==='ICE'&&!iceOk&&hotOk) setTemp('HOT');
+      }
+    }
+  }
+}
+function setTemp(t){
+  curTemp=t;
+  document.querySelectorAll('#tempSeg button').forEach(b=>{
+    const on=b.dataset.temp===t;
+    b.classList.toggle('on',on); b.classList.toggle('ice',on&&t==='ICE'); b.classList.toggle('hot',on&&t==='HOT');
+  });
+}
+function renderOrders(){
+  const list=$('orderList');
+  if(!orders.length){ list.innerHTML='<div class="empty">아직 주문이 없습니다.<br>첫 주문을 담아보세요!</div>'; }
+  else{
+    list.innerHTML='';
+    orders.forEach((o,idx)=>{
+      const div=document.createElement('div'); div.className='order-item';
+      const opts=[o.shot?'샷추가':null,o.memo||null].filter(Boolean);
+      div.innerHTML='<div class="order-num"></div><div class="who"></div><div class="what"><div class="menu-name"><span class="temp-chip '+o.temp+'">'+o.temp+'</span><span class="mn"></span></div>'+(opts.length?'<div class="menu-opt"></div>':'')+'</div><div class="price">'+won(o.price)+'</div><button class="edit-btn" aria-label="수정">✏️</button><button class="del" aria-label="삭제">✕</button>';
+      div.querySelector('.order-num').textContent=makeOrderNum(idx);
+      div.querySelector('.who').textContent=o.name;
+      div.querySelector('.mn').textContent=o.menu;
+      // 재주문 🔁 강조
+      const isReorder = o.memo && o.memo.includes('🔁');
+      if(isReorder) div.classList.add('is-reorder');
+      if(opts.length) div.querySelector('.menu-opt').textContent=opts.join(' · ');
+      div.querySelector('.edit-btn').addEventListener('click',()=>{ openEditModal(o); });
+      div.querySelector('.del').addEventListener('click',async()=>{
+        if(!confirm(o.name+'님의 주문을 삭제할까요?')) return;
+        try{ await deleteOrder(o.id); await fetchOrders(); }catch(e){ toast('삭제 실패: '+e.message); }
+      });
+      list.appendChild(div);
+    });
+  }
+  const total=orders.reduce((s,o)=>s+o.price,0);
+  const people=new Set(orders.map(o=>o.name)).size;
+  $('countBadge').textContent=people+'명 · '+orders.length+'잔';
+  $('barCups').textContent=orders.length+'잔 · '+people+'명';
+  $('barTotal').textContent=won(total);
+  renderHeadcountBar();
+  // 가게 2개 이상 선택 시 통합주문서 버튼 표시
+  $('btnOpenAllReceipt').style.display = lockedBrands.length >= 2 ? '' : 'none';
+}
+
+
+
+
+
+
+
+/* ── 직원용: 내 주문 내역 ── */
+function renderMyOrders(){
+  if(orderMode !== 'order') return;
+  const name = lastOrderName || $('inpName').value.trim();
+  if(!name){ return; }
+
+  // 현재 세션에서 내 이름으로 주문한 것만 필터
+  const myOrders = orders.filter(o=>o.name===name);
+  const list = $('myOrderList');
+  const countEl = $('myOrderCount');
+
+  if(!myOrders.length){
+    list.innerHTML = '<div class="my-order-empty">아직 주문이 없습니다</div>';
+    if(countEl) countEl.textContent = '';
+    return;
+  }
+
+  list.innerHTML = '';
+  let total = 0;
+  myOrders.forEach((o,idx)=>{
+    const opts=[o.shot?'샷추가':null,o.memo&&!o.memo.includes('🔁')?o.memo:null].filter(Boolean);
+    const isReorder = o.memo && o.memo.includes('🔁');
+    const item = document.createElement('div');
+    item.className = 'my-order-item';
+    item.innerHTML =
+      '<div class="my-order-num">'+(idx+1)+'</div>'+
+      '<div class="my-order-info">'+
+        '<div class="my-order-menu"><span class="temp-chip '+o.temp+'" style="font-size:.62rem;padding:1px 5px;">'+o.temp+'</span> '+o.menu+(isReorder?' 🔁':'')+'</div>'+
+        (opts.length?'<div class="my-order-opt">'+opts.join(' · ')+'</div>':'')+
+      '</div>'+
+      '<div class="my-order-price">'+won(o.price)+'</div>'+
+      '<button class="my-edit-btn" style="flex:none;border:none;background:none;color:#A8A29E;font-size:.85rem;cursor:pointer;padding:2px 4px;">✏️</button>'+
+      '<button class="my-del-btn" style="flex:none;border:none;background:none;color:#C9C5BD;font-size:.85rem;cursor:pointer;padding:2px 2px;">✕</button>';
+    item.querySelector('.my-edit-btn').addEventListener('click',()=>{ openEditModal(o); });
+    item.querySelector('.my-del-btn').addEventListener('click', async ()=>{
+      if(!confirm('이 주문을 삭제할까요?')) return;
+      try{ await deleteOrder(o.id); await fetchOrders(); }catch(e){ toast('삭제 실패: '+e.message); }
+    });
+    list.appendChild(item);
+    total += o.price;
+  });
+
+  // 합계
+  const totalDiv = document.createElement('div');
+  totalDiv.className = 'my-order-total';
+  totalDiv.innerHTML = '<span>합계 ('+myOrders.length+'잔)</span><span>'+won(total)+'</span>';
+  list.appendChild(totalDiv);
+
+  if(countEl) countEl.textContent = myOrders.length+'잔 / '+won(total);
+}
+
+/* ═══════════════════════════════════════
+   시작 화면
+═══════════════════════════════════════ */
+
+/* ── 설정 ID 생성 ── */
+function makeCfgId(){
+  return todayBase() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+// 메인 페이지용 cfgId (설정할 때마다 새로 생성)
+let setupCfgId = '';
+
+async function initSetupCfgId(){
+  // localStorage에 저장된 cfgId 재사용 또는 새로 생성
+  const stored = localStorage.getItem('setup_cfg_id');
+  if(stored && stored.startsWith(todayBase())){
+    setupCfgId = stored;
+  } else {
+    setupCfgId = makeCfgId();
+    localStorage.setItem('setup_cfg_id', setupCfgId);
+  }
+  cfgId = setupCfgId;
+}
+/* ── 설정 페이지 JS ── */
+function updateSetupDoneBtn(){
+  const btn = $('setupBtnDone');
+  const hasTeam = document.querySelectorAll('.setup-team-card').length > 0;
+  const hasStore = lockedBrands.length > 0;
+  if(hasTeam && hasStore){
+    btn.disabled = false;
+    btn.textContent = '🚀 설정 완료 — 취합 시작';
+  } else if(!hasTeam){
+    btn.disabled = true;
+    btn.textContent = '팀 링크를 추가해주세요';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '주문설정에서 가게를 선택해주세요';
+  }
+}
+
+function updateSetupSummary(){
+  const storeEl = $('setupSumStore');
+  if(storeEl){
+    if(lockedBrands.length){
+      storeEl.textContent = lockedBrands.map(b=>STORE_META[b]?.name||b).join(', ');
+      storeEl.style.color = 'var(--primary)';
+    } else {
+      storeEl.textContent = '미설정 (필수)';
+      storeEl.style.color = '#EF4444';
+    }
+  }
+  const dlEl = $('setupSumDeadline');
+  if(dlEl){
+    if(deadlineTs > Date.now()){
+      const d=new Date(deadlineTs); const hh=d.getHours(); const mm=d.getMinutes();
+      dlEl.textContent=(hh<12?'오전':'오후')+' '+(hh%12||12)+':'+String(mm).padStart(2,'0');
+      dlEl.style.color='var(--primary)';
+    } else { dlEl.textContent='미설정'; dlEl.style.color='var(--sub)'; }
+  }
+  const hcEl = $('setupSumHeadcount');
+  if(hcEl){ hcEl.textContent=totalHeadcount?totalHeadcount+'잔':'미설정'; hcEl.style.color=totalHeadcount?'var(--primary)':'var(--sub)'; }
+  const plEl = $('setupSumPrice');
+  if(plEl){ plEl.textContent=maxPricePerOrder?maxPricePerOrder.toLocaleString()+'원 이하':'제한없음'; plEl.style.color=maxPricePerOrder?'#EA580C':'var(--sub)'; }
+  updateSetupDoneBtn();
+}
+
+async function renderSetupTeamList(){
+  const list = await loadTeamList();
+  const container = $('setupTeamList');
+  container.innerHTML = '';
+  if(!list.length){
+    container.innerHTML = '<div class="setup-empty-msg">팀을 추가해주세요</div>';
+    updateSetupDoneBtn(); return;
+  }
+  list.forEach(team=>{
+    const cfg = setupCfgId || cfgId || 'setup';
+    const adminUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&cfg='+cfg;
+    const orderUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&cfg='+cfg+'&mode=order';
+    const card = document.createElement('div');
+    card.className = 'setup-team-card';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
+        '<span style="font-size:.92rem;font-weight:800;">'+team+'</span>'+
+        '<button class="sdel" style="border:none;background:#FBE7E5;color:var(--danger);font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">삭제</button>'+
+      '</div>'+
+      '<div class="setup-link-row">'+
+        '<span class="setup-link-badge" style="background:#EEF2FF;color:#3730A3;">관리자</span>'+
+        '<span class="setup-link-url su-a"></span>'+
+        '<button class="setup-copy-btn sc-a" style="background:var(--primary);color:#fff;">복사</button>'+
+        '<button class="setup-copy-btn so-a" style="background:#fff;border:1.5px solid var(--primary);color:var(--primary);">열기</button>'+
+      '</div>'+
+      '<div class="setup-link-row">'+
+        '<span class="setup-link-badge" style="background:#F0FDF4;color:#16A34A;">직원</span>'+
+        '<span class="setup-link-url su-o"></span>'+
+        '<button class="setup-copy-btn sc-o" style="background:#16A34A;color:#fff;">복사</button>'+
+        '<button class="setup-copy-btn so-o" style="background:#fff;border:1.5px solid #16A34A;color:#16A34A;">열기</button>'+
+      '</div>';
+    card.querySelector('.su-a').textContent = adminUrl;
+    card.querySelector('.su-o').textContent = orderUrl;
+    const cp=(t,l)=>{ navigator.clipboard.writeText(t).then(()=>toast('📋 '+l+' 복사됨')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+l+' 복사됨'); }); };
+    card.querySelector('.sc-a').addEventListener('click',()=>cp(adminUrl,team+' 관리자'));
+    card.querySelector('.sc-o').addEventListener('click',()=>cp(orderUrl,team+' 직원'));
+    card.querySelector('.so-a').addEventListener('click',()=>window.open(adminUrl,'_blank'));
+    card.querySelector('.so-o').addEventListener('click',()=>window.open(orderUrl,'_blank'));
+    card.querySelector('.sdel').addEventListener('click', async ()=>{
+      const updated=(await loadTeamList()).filter(t=>t!==team);
+      await saveTeamList(updated); await renderSetupTeamList();
+    });
+    container.appendChild(card);
+  });
+  updateSetupDoneBtn();
+}
+
+// ── 설정 페이지 이벤트: 이벤트 위임으로 처리 (display:none 상태에서도 동작) ──
+document.addEventListener('click', async (e)=>{
+  // 팀 추가
+  if(e.target.id === 'setupBtnAddTeam' || e.target.closest('#setupBtnAddTeam')){
+    const name = $('setupInpTeam').value.trim();
+    if(!name){ toast('팀 이름을 입력해주세요'); return; }
+    // 가게 설정 필수 확인
+    if(!lockedBrands.length){
+      toast('⚠️ 먼저 주문설정에서 가게를 선택해주세요');
+      document.getElementById('setupBtnSettings')?.click();
+      return;
+    }
+    // 링크 생성 전 cfgId 반드시 초기화
+    if(!setupCfgId) await initSetupCfgId();
+    cfgId = setupCfgId;
+    const list = await loadTeamList();
+    if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
+    list.push(name); await saveTeamList(list);
+    $('setupInpTeam').value=''; await renderSetupTeamList();
+    toast('✅ '+name+' 링크 생성됨');
+  }
+  // 설정 열기
+  if(e.target.id === 'setupBtnSettings' || e.target.closest('#setupBtnSettings')){
+    if(!setupCfgId) await initSetupCfgId();
+    cfgId = setupCfgId;
+    console.log('[설정] cfgId:', cfgId);
+    openPinModal('verify','order');
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.target.id === 'setupInpTeam' && e.key === 'Enter'){
+    document.getElementById('setupBtnAddTeam')?.click();
+  }
+});
+
+// 새로운 주문 버튼 (이벤트 위임)
+document.addEventListener('click', async (e)=>{
+  if(!(e.target.id === 'setupBtnNewOrder' || e.target.closest('#setupBtnNewOrder'))) return;
+  if(!confirm('현재 주문 데이터를 모두 초기화하고 새로운 주문을 시작할까요?\n(기존 데이터는 DB에 남아있습니다)')) return;
+
+  const btn = $('setupBtnNewOrder');
+  btn.disabled = true; btn.textContent = '초기화 중...';
+
+  try{
+    await clearStoreLock();
+    await clearDeadlineData();
+    if(countdownTimer) clearInterval(countdownTimer);
+    await clearHeadcount();
+    maxPricePerOrder = 0; await savePriceLimit();
+    sessionCount = (sessionCount||1) + 1;
+    sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
+    saveSession();
+    setupCfgId = makeCfgId();
+    cfgId = setupCfgId;
+    localStorage.setItem('setup_cfg_id', setupCfgId);
+    await saveTeamList([]);
+    await renderSetupTeamList();
+    updateSetupSummary();
+    toast('🔄 새로운 주문이 시작됩니다 ('+sessionCount+'회차)');
+  }catch(e){
+    toast('초기화 실패: '+e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = '🔄 새 주문';
+  }
+});
+document.addEventListener('click',(e)=>{
+  if(!(e.target.id === 'setupBtnDone' || e.target.closest('#setupBtnDone'))) return;
+  if(!lockedBrands.length){ toast('⚠️ 주문설정에서 가게를 선택해주세요'); return; }
+  document.body.classList.remove('mode-setup');
+  pageMode='admin';
+  toast('✅ 설정 완료! 주문 취합을 시작합니다');
+});
+/* ═══════════════════════════════════════
+   역할 모드 적용 (admin / order)
+═══════════════════════════════════════ */
+function applyOrderMode(){
+  if(orderMode !== 'order') return;
+  // CSS 클래스로 즉시 적용 — 타이밍 문제 없음
+  document.body.classList.add('mode-order');
+  // 제목 변경
+  const h1 = document.querySelector('header h1');
+  if(h1) h1.childNodes[0].textContent = '☕ 주문 ';
+  // 안내 문구 변경
+  const notice = document.querySelector('.notice');
+  if(notice) notice.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
+}
+/* ═══════════════════════════════════════
+   팀별 링크 생성
+═══════════════════════════════════════ */
+async function loadTeamList(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=team_list`
+    );
+    const raw = rows[0]?.team_list || '[]';
+    return JSON.parse(raw);
+  }catch(e){
+    console.warn('[팀목록] DB 로드 실패:', e.message);
+    return [];
+  }
+}
+async function saveTeamList(list){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: '__global__',
+        brand: '__global__',
+        team_list: JSON.stringify(list),
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[팀목록] DB 저장 실패:', e.message); }
+}
+
+function getBaseURL(){
+  return window.location.origin + window.location.pathname;
+}
+
+
+/* ── 고유번호 생성 ── */
+function makeOrderNum(index){
+  // 날짜
+  const d = new Date();
+  const date = (d.getMonth()+1)+'/'+(d.getDate());
+  // 팀
+  const team = teamName || '공용';
+  // 회차
+  const round = sessionCount+'회차';
+  // 순번 (3자리)
+  const seq = String(index+1).padStart(3,'0');
+  return date+' '+team+' '+round+'-'+seq;
+}
+/* ═══════════════════════════════════════
+   주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
+═══════════════════════════════════════ */
+/* ── 모바일 여부에 따라 배민/쿠팡 버튼 표시 ── */
+function isMobile(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+function applyMobileButtons(){
+  const show = isMobile();
+  ['btnStoreApp','btnStoreAppAll'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = show ? '' : 'none';
+  });
+}
+
+
+// 현재 선택된 브랜드 검색 키워드
+function getStoreKeyword(){
+  const activeBrands = lockedBrands.length ? lockedBrands : [brand];
+  const KEYWORDS = {paik:'빽다방', mega:'메가MGC커피', compose:'컴포즈커피'};
+  return activeBrands.map(b=>KEYWORDS[b]||b).join(' ');
+}
+
+// 카카오맵 — GPS 기반 가까운 매장 검색
+function openKakaoMap(){
+  const keyword = getStoreKeyword();
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        const {latitude:lat, longitude:lng} = pos.coords;
+        // 카카오맵 장소검색 URL (현위치 기반)
+        const url = `https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`;
+        window.open(url, '_blank');
+      },
+      ()=>{
+        // GPS 실패 시 그냥 검색
+        window.open(`https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`, '_blank');
+      }
+    );
+  } else {
+    window.open(`https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`, '_blank');
+  }
+}
+
+
+/* ── 가게 앱 딥링크 ── */
+const STORE_APP_LINKS = {
+  paik: {
+    name: '빽다방',
+    android: 'intent://paikdabang.com#Intent;scheme=paikdabang;package=com.paikdabang.app;end',
+    ios: 'paikdabang://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.paikdabang.app',
+    appstore: 'https://apps.apple.com/kr/app/%EB%B9%BD%EB%8B%A4%EB%B0%A9/id1086566155',
+  },
+  mega: {
+    name: '메가커피',
+    android: 'intent://mega-mgccoffee.com#Intent;scheme=megacoffee;package=com.mega.megacoffee;end',
+    ios: 'megacoffee://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.mega.megacoffee',
+    appstore: 'https://apps.apple.com/kr/app/%EB%A9%94%EA%B0%80mgc%EC%BB%A4%ED%94%BC/id1455484454',
+  },
+  compose: {
+    name: '컴포즈커피',
+    android: 'intent://composecoffee.com#Intent;scheme=composecoffee;package=com.compose.coffee;end',
+    ios: 'composecoffee://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.compose.coffee',
+    appstore: 'https://apps.apple.com/kr/app/%EC%BB%B4%ED%8F%AC%EC%A6%88%EC%BB%A4%ED%94%BC/id1536152425',
+  },
+};
+
+function openStoreApp(){
+  // 현재 선택된 브랜드들
+  const activeBrands = lockedBrands.length ? lockedBrands : [brand];
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if(activeBrands.length === 1){
+    // 단일 가게 — 바로 앱 열기
+    const info = STORE_APP_LINKS[activeBrands[0]];
+    if(!info) return;
+    if(isIOS){
+      // iOS: 딥링크 시도 → 1.5초 후 앱스토어 폴백
+      window.location.href = info.ios;
+      setTimeout(()=>{ window.open(info.appstore, '_blank'); }, 1500);
+    } else if(isAndroid){
+      // Android: intent 방식
+      window.location.href = info.android;
+      setTimeout(()=>{ window.open(info.playstore, '_blank'); }, 1500);
+    }
+    toast('📱 '+info.name+' 앱 열기 시도 중...');
+  } else {
+    // 다중 가게 — 선택 팝업
+    const names = activeBrands.map(b=>STORE_APP_LINKS[b]?.name||b).join(' / ');
+    const idx = activeBrands.findIndex(b=>{
+      // 현재 보고 있는 브랜드 우선
+      return b === brand;
+    });
+    const target = activeBrands[idx >= 0 ? idx : 0];
+    const info = STORE_APP_LINKS[target];
+    if(!info) return;
+    if(isIOS){
+      window.location.href = info.ios;
+      setTimeout(()=>{ window.open(info.appstore, '_blank'); }, 1500);
+    } else if(isAndroid){
+      window.location.href = info.android;
+      setTimeout(()=>{ window.open(info.playstore, '_blank'); }, 1500);
+    }
+    toast('📱 '+info.name+' 앱 열기 시도 중...');
+  }
+}
+
+// (구) 배달의민족 — 미사용
+async function openBaemin(copyFn){
+  await copyFn();
+  const keyword = getStoreKeyword();
+  // 배민 앱 딥링크 → 없으면 웹으로 폴백
+  const appUrl = `baemin://search?query=${encodeURIComponent(keyword)}`;
+  const webUrl = `https://www.baemin.com/search?query=${encodeURIComponent(keyword)}`;
+  // 딥링크 시도 후 300ms 내 반응없으면 웹으로
+  const win = window.open(appUrl, '_blank');
+  setTimeout(()=>{
+    try{ if(win) win.location.href = webUrl; }catch(e){ window.open(webUrl,'_blank'); }
+  }, 1500);
+  toast('주문서 복사됨 — 앱에서 붙여넣기하세요 📋');
+}
+
+// 쿠팡이츠 딥링크
+async function openCoupang(copyFn){
+  await copyFn();
+  const keyword = getStoreKeyword();
+  const appUrl = `coupangeats://search?keyword=${encodeURIComponent(keyword)}`;
+  const webUrl = `https://www.coupangeats.com/search?query=${encodeURIComponent(keyword)}`;
+  window.open(appUrl, '_blank');
+  setTimeout(()=>{ window.open(webUrl,'_blank'); }, 1500);
+  toast('주문서 복사됨 — 앱에서 붙여넣기하세요 📋');
+}
+
+// 개별 주문서 버튼
+$('btnKakaoMap').addEventListener('click', openKakaoMap);
+$('btnStoreApp').addEventListener('click', openStoreApp);
+
+// 통합주문서 버튼
+$('btnKakaoMapAll').addEventListener('click', openKakaoMap);
+$('btnStoreAppAll').addEventListener('click', openStoreApp);
+/* ═══════════════════════════════════════
+   재주문
+═══════════════════════════════════════ */
+let reorderDateList = [];     // [{date, label, sessions:[{sessionId, brand, count}]}]
+let reorderCurrentDate = '';  // 선택된 날짜
+let reorderItems = [];        // 현재 날짜의 주문 목록
+let reorderSelected = new Set(); // 선택된 주문 id
+
+async function openReorderModal(){
+  $('reorderDateTabs').innerHTML = '<div class="reorder-empty">날짜 목록 불러오는 중...</div>';
+  $('reorderList').innerHTML = '';
+  reorderSelected.clear();
+  $('modalReorder').classList.add('show');
+
+  try{
+    // 세션 ID에서 날짜 추출 (YYYYMMDD_N 형식)
+    const data = await sbFetch(
+      `coffee_orders?select=session_id,brand,created_at&order=created_at.desc`
+    );
+
+    // 날짜별 그룹핑
+    const dateMap = new Map();
+    data.forEach(o=>{
+      const dateStr = o.session_id ? o.session_id.substring(0,8) : '';
+      if(!/^\d{8}$/.test(dateStr)) return;
+      const y=dateStr.slice(0,4), m=dateStr.slice(4,6), d=dateStr.slice(6,8);
+      const label = parseInt(m)+'월 '+parseInt(d)+'일';
+      if(!dateMap.has(dateStr)) dateMap.set(dateStr,{date:dateStr,label,sessions:new Set()});
+      dateMap.get(dateStr).sessions.add(o.session_id);
+    });
+
+    reorderDateList = [...dateMap.entries()]
+      .sort((a,b)=>b[0].localeCompare(a[0]))
+      .slice(0,14) // 최근 14일
+      .map(([date,v])=>({date,label:v.label,sessions:[...v.sessions]}));
+
+    renderReorderDateTabs();
+
+    // 오늘 제외한 가장 최근 날짜 자동 선택
+    const todayStr2 = todayBase();
+    const firstOther = reorderDateList.find(d=>d.date!==todayStr2);
+    if(firstOther) loadReorderDate(firstOther.date);
+    else if(reorderDateList.length) loadReorderDate(reorderDateList[0].date);
+
+  }catch(e){
+    $('reorderDateTabs').innerHTML = '<div class="reorder-empty">불러오기 실패: '+e.message+'</div>';
+  }
+}
+
+function renderReorderDateTabs(){
+  const tabs = $('reorderDateTabs');
+  tabs.innerHTML = '';
+  if(!reorderDateList.length){
+    tabs.innerHTML = '<div style="font-size:.82rem;color:var(--sub);">이전 주문 내역이 없습니다.</div>';
+    return;
+  }
+  reorderDateList.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'reorder-date-tab' + (d.date===reorderCurrentDate?' active':'');
+    btn.textContent = d.label;
+    btn.addEventListener('click',()=>loadReorderDate(d.date));
+    tabs.appendChild(btn);
+  });
+}
+
+async function loadReorderDate(date){
+  reorderCurrentDate = date;
+  reorderSelected.clear();
+  document.querySelectorAll('.reorder-date-tab').forEach(b=>{
+    const info = reorderDateList.find(d=>d.label===b.textContent);
+    b.classList.toggle('active', info&&info.date===date);
+  });
+  $('reorderList').innerHTML = '<div class="reorder-empty">불러오는 중...</div>';
+
+  try{
+    // 해당 날짜의 모든 주문 조회
+    const data = await sbFetch(
+      `coffee_orders?session_id=like.${date}%&order=created_at.asc`
+    );
+    reorderItems = data;
+    renderReorderList();
+  }catch(e){
+    $('reorderList').innerHTML = '<div class="reorder-empty">오류: '+e.message+'</div>';
+  }
+}
+
+function renderReorderList(){
+  const list = $('reorderList');
+  if(!reorderItems.length){
+    list.innerHTML = '<div class="reorder-empty">해당 날짜의 주문 내역이 없습니다.</div>';
+    updateReorderCount();
+    return;
+  }
+
+  // 세션별 그룹 헤더 표시
+  const sessionMap = new Map();
+  reorderItems.forEach(o=>{
+    if(!sessionMap.has(o.session_id)) sessionMap.set(o.session_id,[]);
+    sessionMap.get(o.session_id).push(o);
+  });
+
+  list.innerHTML = '';
+  sessionMap.forEach((items, sid)=>{
+    // 세션 헤더
+    const header = document.createElement('div');
+    const BNAMES = {paik:'빽다방',mega:'메가커피',compose:'컴포즈'};
+    const brands = [...new Set(items.map(o=>o.brand))].map(b=>BNAMES[b]||b).join(', ');
+    const total = items.reduce((s,o)=>s+o.price,0);
+    const round = sid.includes('_') ? sid.split('_').slice(-1)[0]+'회차' : '1회차';
+    header.style.cssText='font-size:.72rem;font-weight:800;color:var(--primary);padding:8px 4px 4px;border-bottom:2px solid var(--primary);margin-bottom:4px;display:flex;justify-content:space-between;';
+    header.innerHTML='<span>'+round+' · '+brands+'</span><span style="color:var(--sub);">'+items.length+'잔 / '+won(total)+'</span>';
+    list.appendChild(header);
+
+    items.forEach(o=>{
+      const div = document.createElement('div');
+      div.className = 'reorder-item';
+      const opts=[o.shot?'샷추가':null,o.memo||null].filter(Boolean).join(' · ');
+      div.innerHTML =
+        '<div class="reorder-chk" data-id="'+o.id+'"></div>'+
+        '<div class="reorder-info">'+
+          '<div class="reorder-name"></div>'+
+          '<div class="reorder-menu"><span class="temp-chip '+o.temp+'" style="font-size:.62rem;padding:1px 5px;">'+o.temp+'</span> <span class="rmenu"></span>'+(opts?' · <span style="color:var(--sub);">'+opts+'</span>':'')+'</div>'+
+        '</div>'+
+        '<div class="reorder-price">'+won(o.price)+'</div>';
+      div.querySelector('.reorder-name').textContent = o.name;
+      div.querySelector('.rmenu').textContent = o.menu;
+      const chk = div.querySelector('.reorder-chk');
+      chk.addEventListener('click',()=>{
+        if(reorderSelected.has(o.id)){
+          reorderSelected.delete(o.id);
+          chk.classList.remove('checked');
+          chk.textContent = '';
+        } else {
+          reorderSelected.add(o.id);
+          chk.classList.add('checked');
+          chk.textContent = '✓';
+        }
+        updateReorderCount();
+      });
+      list.appendChild(div);
+    });
+  });
+  updateReorderCount();
+}
+
+function updateReorderCount(){
+  const cnt = reorderSelected.size;
+  $('reorderSelCount').textContent = cnt ? '('+cnt+'잔)' : '';
+}
+
+// 전체선택 토글
+$('btnReorderSelectAll').addEventListener('click',()=>{
+  const allIds = reorderItems.map(o=>o.id);
+  const allSelected = allIds.every(id=>reorderSelected.has(id));
+  if(allSelected){
+    // 전체 해제
+    reorderSelected.clear();
+    document.querySelectorAll('.reorder-chk').forEach(c=>{ c.classList.remove('checked'); c.textContent=''; });
+    $('btnReorderSelectAll').textContent='전체선택';
+  } else {
+    // 전체 선택
+    allIds.forEach(id=>reorderSelected.add(id));
+    document.querySelectorAll('.reorder-chk').forEach(c=>{ c.classList.add('checked'); c.textContent='✓'; });
+    $('btnReorderSelectAll').textContent='전체해제';
+  }
+  updateReorderCount();
+});
+
+// 선택 주문 가져오기
+$('btnReorderConfirm').addEventListener('click', async ()=>{
+  if(!reorderSelected.size){ toast('가져올 주문을 선택해주세요'); return; }
+
+  const btn = $('btnReorderConfirm');
+  btn.disabled=true; btn.textContent='가져오는 중...';
+
+  const selectedOrders = reorderItems.filter(o=>reorderSelected.has(o.id));
+  let successCount = 0;
+
+  try{
+    for(const o of selectedOrders){
+      // 가격 한도 체크
+      if(maxPricePerOrder>0 && o.price>maxPricePerOrder) continue;
+      // 재주문 메모 처리 (기존 메모 유지 + 🔁 태그)
+      const reorderMemo = o.memo ? o.memo+' 🔁' : '🔁';
+      // 새 ID로 현재 세션에 추가
+      await sbFetch('coffee_orders',{
+        method:'POST',
+        body:JSON.stringify({
+          id: Date.now()+'_'+Math.random().toString(36).slice(2,5),
+          session_id: sessionId,
+          brand: lockedBrands.includes(o.brand) ? o.brand : (lockedBrands[0]||o.brand),
+          name: o.name,
+          menu: o.menu,
+          temp: o.temp,
+          shot: o.shot,
+          memo: reorderMemo,
+          price: o.price,
+        })
+      });
+      successCount++;
+    }
+    await fetchOrders();
+    $('modalReorder').classList.remove('show');
+    toast('✅ '+successCount+'잔 재주문 완료!');
+  }catch(e){
+    toast('가져오기 실패: '+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='✅ 선택 주문 가져오기 <span id="reorderSelCount"></span>';
+  }
+});
+
+$('btnReorderClose').addEventListener('click',()=>$('modalReorder').classList.remove('show'));
+$('modalReorder').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+$('btnOpenReorder').addEventListener('click', openReorderModal);
+/* ═══════════════════════════════════════
+   주문 수정
+═══════════════════════════════════════ */
+let editingOrder = null;
+let editTemp = 'ICE';
+
+function openEditModal(o){
+  editingOrder = o;
+  editTemp = o.temp;
+
+  // 이름
+  $('editName').value = o.name;
+
+  // 샷 추가 가격 표시
+  $('editShotLabel').textContent = '(+'+BRANDS[o.brand||brand].shotPrice.toLocaleString()+'원)';
+
+  // 카테고리 탭 렌더링
+  renderEditCats(o.brand||brand);
+
+  // 메뉴 셀렉트
+  renderEditMenu(o.brand||brand, o.menu);
+
+  // 온도
+  setEditTemp(o.temp);
+
+  // 샷
+  $('editShot').checked = o.shot || false;
+
+  // 요청사항
+  $('editMemo').value = o.memo || '';
+
+  $('modalEditOrder').classList.add('show');
+}
+
+function closeEditModal(){
+  editingOrder = null;
+  $('modalEditOrder').classList.remove('show');
+}
+
+let editCurCat = '전체';
+function renderEditCats(b){
+  editCurCat = '전체';
+  const scroll = $('editCatScroll');
+  scroll.innerHTML = '';
+  BRANDS[b].cats.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (c===editCurCat?' active':'');
+    btn.textContent = c;
+    btn.addEventListener('click',()=>{
+      editCurCat = c;
+      scroll.querySelectorAll('.cat-btn').forEach(x=>x.classList.toggle('active',x.textContent===c));
+      renderEditMenu(b, null);
+    });
+    scroll.appendChild(btn);
+  });
+}
+
+function renderEditMenu(b, currentMenu){
+  const menus = BRANDS[b].menus;
+  const filtered = editCurCat==='전체' ? menus : menus.filter(m=>m.cat===editCurCat);
+  const sel = $('editMenu');
+  sel.innerHTML = '';
+  let found = false;
+  filtered.forEach(m=>{
+    const ri = menus.indexOf(m);
+    const prices = [];
+    if(m.hot!=null) prices.push('HOT '+m.hot.toLocaleString());
+    if(m.ice!=null) prices.push('ICE '+m.ice.toLocaleString());
+    const opt = document.createElement('option');
+    const minPrice = Math.min(...[m.hot,m.ice].filter(p=>p!=null));
+    const overLimit = maxPricePerOrder>0 && minPrice>maxPricePerOrder;
+    opt.value = ri;
+    opt.textContent = (overLimit?'🚫 ':'')+m.name+' · '+prices.join(' / ')+(overLimit?' (한도초과)':'');
+    if(overLimit) opt.disabled = true;
+    if(currentMenu && m.name===currentMenu){ opt.selected=true; found=true; }
+    sel.appendChild(opt);
+  });
+  // 전체 탭에서 못 찾으면 이름 직접 표시
+  if(currentMenu && !found){
+    const opt = document.createElement('option');
+    opt.value = '__current__'; opt.textContent = currentMenu+' (현재)'; opt.selected = true;
+    sel.insertBefore(opt, sel.firstChild);
+  }
+  const optC = document.createElement('option'); optC.value=CUSTOM; optC.textContent='➕ 직접 입력';
+  sel.appendChild(optC);
+}
+
+function setEditTemp(t){
+  editTemp = t;
+  document.querySelectorAll('#editTempSeg button').forEach(b=>{
+    const on = b.dataset.et===t;
+    b.classList.toggle('on',on);
+    b.classList.toggle('ice',on&&t==='ICE');
+    b.classList.toggle('hot',on&&t==='HOT');
+  });
+}
+
+document.querySelectorAll('#editTempSeg button').forEach(b=>{
+  b.addEventListener('click',()=>setEditTemp(b.dataset.et));
+});
+
+$('btnEditClose').addEventListener('click', closeEditModal);
+$('btnEditCancel').addEventListener('click', closeEditModal);
+$('modalEditOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeEditModal(); });
+
+$('btnEditSave').addEventListener('click', async ()=>{
+  if(!editingOrder) return;
+  const btn = $('btnEditSave');
+  btn.disabled=true; btn.textContent='저장 중...';
+
+  const name = $('editName').value.trim();
+  if(!name){ toast('이름을 입력해주세요'); btn.disabled=false; btn.textContent='✅ 수정 저장'; return; }
+
+  const selVal = $('editMenu').value;
+  let menuName, basePrice;
+  const b = editingOrder.brand || brand;
+
+  if(selVal===CUSTOM){
+    toast('직접 입력은 삭제 후 새로 추가해주세요');
+    btn.disabled=false; btn.textContent='✅ 수정 저장'; return;
+  } else if(selVal==='__current__'){
+    menuName = editingOrder.menu;
+    basePrice = editingOrder.price - (editingOrder.shot?BRANDS[b].shotPrice:0);
+  } else {
+    const m = BRANDS[b].menus[+selVal];
+    menuName = m.name;
+    basePrice = editTemp==='HOT' ? m.hot : m.ice;
+    if(basePrice==null){ toast('이 메뉴는 '+editTemp+' 옵션이 없습니다'); btn.disabled=false; btn.textContent='✅ 수정 저장'; return; }
+  }
+
+  const shot = $('editShot').checked;
+  const price = basePrice + (shot?BRANDS[b].shotPrice:0);
+
+  // 가격 한도 체크
+  if(maxPricePerOrder>0 && price>maxPricePerOrder){
+    toast('❌ '+price.toLocaleString()+'원 — 한도 초과 (최대 '+maxPricePerOrder.toLocaleString()+'원)');
+    btn.disabled=false; btn.textContent='✅ 수정 저장'; return;
+  }
+
+  try{
+    // 기존 삭제 후 새로 삽입 (Supabase UPDATE)
+    await sbFetch('coffee_orders?id=eq.'+editingOrder.id, {
+      method: 'PATCH',
+      headers: {'Prefer':'return=representation'},
+      body: JSON.stringify({
+        name, menu:menuName, temp:editTemp, shot,
+        memo:$('editMemo').value.trim(), price
+      })
+    });
+    await fetchOrders();
+    closeEditModal();
+    toast('✅ '+name+'님 주문이 수정되었습니다');
+  }catch(e){
+    toast('수정 실패: '+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='✅ 수정 저장';
+  }
+});
+
+/* ── 수량 선택 ── */
+let orderQty = 1;
+
+function setQty(n){
+  orderQty = Math.min(5, Math.max(1, n));
+  $('qtyNum').textContent = orderQty;
+  $('btnQtyMinus').disabled = orderQty <= 1;
+  $('btnQtyPlus').disabled = orderQty >= 5;
+}
+
+$('btnQtyMinus').addEventListener('click',()=> setQty(orderQty - 1));
+$('btnQtyPlus').addEventListener('click',()=> setQty(orderQty + 1));
+/* ═══════════════════════════════════════
+   주문 추가
+═══════════════════════════════════════ */
+async function addOrder(){
+  if(isAdding) return;
+  const name=$('inpName').value.trim();
+  if(!name){ toast('이름을 입력해주세요'); $('inpName').focus(); return; }
+  let menuName,basePrice;
+  const sv=$('selMenu').value;
+  if(sv===CUSTOM){
+    menuName=$('inpCustomName').value.trim();
+    basePrice=parseInt($('inpCustomPrice').value.replace(/[^0-9]/g,''),10);
+    if(!menuName){ toast('메뉴 이름을 입력해주세요'); return; }
+    if(!basePrice||basePrice<=0){ toast('가격을 입력해주세요'); return; }
+  }else{
+    const m=BRANDS[brand].menus[+sv];
+    menuName=m.name; basePrice=curTemp==='HOT'?m.hot:m.ice;
+    if(basePrice==null){ toast('이 메뉴는 '+curTemp+' 옵션이 없습니다'); return; }
+  }
+  const shot=$('chkShot').checked;
+  const price=basePrice+(shot?BRANDS[brand].shotPrice:0);
+
+  // ── 가격 한도 초과 차단 ──
+  if(maxPricePerOrder > 0 && price > maxPricePerOrder){
+    toast(`❌ ${price.toLocaleString()}원 — 한도 초과 (최대 ${maxPricePerOrder.toLocaleString()}원)`);
+    return;
+  }
+
+  // ── 동명 선주문 확인 ──
+  const prevOrders = allOrders.filter(o => o.name === name);
+  if(prevOrders.length > 0){
+    const prevList = prevOrders.map(o =>
+      `• ${o.temp} ${o.menu}${o.shot?' (샷추가)':''}${o.memo?' / '+o.memo:''} — ${o.price.toLocaleString()}원`
+    ).join('\n');
+    const ok = confirm(
+      `⚠️ "${name}"님의 선주문이 있습니다.\n\n${prevList}\n\n추가로 주문하시겠습니까?`
+    );
+    if(!ok) return;
+  }
+
+  const row={id:Date.now()+'_'+Math.random().toString(36).slice(2,6),session_id:sessionId,brand,name,menu:menuName,temp:curTemp,shot,memo:$('inpMemo').value.trim(),price};
+  isAdding=true; const btn=$('btnAdd'); btn.disabled=true; btn.textContent='저장 중...';
+  try{
+    await insertOrder(row); await fetchOrders();
+    lastOrderName = name; // 이름 기억
+    renderMyOrders();
+    toast(name+'님 주문 완료 ☕');
+    $('inpName').value=''; $('inpMemo').value=''; $('chkShot').checked=false;
+    $('inpCustomName').value=''; $('inpCustomPrice').value=''; $('inpName').focus();
+  }catch(e){ toast('저장 실패: '+e.message); }
+  finally{ isAdding=false; btn.disabled=false; btn.textContent='주문 담기'; }
+}
+
+/* ═══════════════════════════════════════
+   관리자 — 가격 수정 패널
+═══════════════════════════════════════ */
+function renderPriceTable(){
+  const tbody=$('priceTableBody'); tbody.innerHTML='';
+  BRANDS[adminBrand].menus.forEach((m,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><span class="menu-nm"></span><span class="cat-tag"></span></td>'+
+      '<td style="text-align:right;"><input type="number" class="price-inp" data-idx="'+i+'" data-type="hot" min="0" step="100" '+(m.hot==null?'value="" placeholder="-"':'value="'+m.hot+'"')+(m.hot==null?' disabled':'')+' style="width:72px;"></td>'+
+      '<td style="text-align:right;"><input type="number" class="price-inp" data-idx="'+i+'" data-type="ice" min="0" step="100" '+(m.ice==null?'value="" placeholder="-"':'value="'+m.ice+'"')+(m.ice==null?' disabled':'')+' style="width:72px;"></td>';
+    tr.querySelector('.menu-nm').textContent=m.name;
+    tr.querySelector('.cat-tag').textContent=m.cat;
+    // disabled 스타일
+    tr.querySelectorAll('.price-inp').forEach(inp=>{
+      if(inp.disabled) inp.classList.add('na');
+    });
+    tbody.appendChild(tr);
+  });
+}
+function savePrices(){
+  // 각 메뉴 가격
+  document.querySelectorAll('#priceTableBody .price-inp:not([disabled])').forEach(inp=>{
+    const idx=parseInt(inp.dataset.idx,10);
+    const type=inp.dataset.type;
+    const val=parseInt(inp.value,10);
+    if(!isNaN(val)&&val>0) BRANDS[adminBrand].menus[idx][type]=val;
+  });
+  saveMenuData();
+  // 현재 브랜드면 UI 갱신
+  if(adminBrand===brand){ applyBrandTheme(); renderCats(); renderMenuSelect(); }
+  toast('✅ 가격이 저장되었습니다');
+}
+
+/* ═══════════════════════════════════════
+   관리자 — 메뉴 추가 패널
+═══════════════════════════════════════ */
+function updateAddCatSelect(){
+  const b=$('addBrand').value;
+  const sel=$('addCat'); sel.innerHTML='';
+  BRANDS[b].cats.filter(c=>c!=='전체').forEach(c=>{
+    const opt=document.createElement('option'); opt.value=c; opt.textContent=c; sel.appendChild(opt);
+  });
+}
+function addMenu(){
+  const b=$('addBrand').value;
+  const cat=$('addCat').value;
+  const name=$('addName').value.trim();
+  const hotVal=$('addHot').value.trim();
+  const iceVal=$('addIce').value.trim();
+  if(!name){ toast('메뉴 이름을 입력해주세요'); return; }
+  if(!hotVal&&!iceVal){ toast('HOT 또는 ICE 가격 중 하나는 입력해주세요'); return; }
+  const hot=hotVal?parseInt(hotVal,10):null;
+  const ice=iceVal?parseInt(iceVal,10):null;
+  if((hot!==null&&hot<=0)||(ice!==null&&ice<=0)){ toast('가격은 0보다 커야 합니다'); return; }
+  // 중복 확인
+  if(BRANDS[b].menus.find(m=>m.name===name)){ toast('이미 같은 이름의 메뉴가 있습니다'); return; }
+  BRANDS[b].menus.push({name,cat,hot,ice});
+  saveMenuData();
+  if(b===brand){ renderCats(); renderMenuSelect(); }
+  // 입력 초기화
+  $('addName').value=''; $('addHot').value=''; $('addIce').value='';
+  toast('✅ "'+name+'" 메뉴가 추가되었습니다');
+  renderPriceTable(); renderDelMenuList();
+}
+
+/* ═══════════════════════════════════════
+   관리자 — 메뉴 삭제 패널
+═══════════════════════════════════════ */
+function renderDelMenuList(){
+  const list=$('delMenuList'); list.innerHTML='';
+  const menus=BRANDS[delBrand].menus;
+  if(!menus.length){ list.innerHTML='<div class="empty">메뉴가 없습니다.</div>'; return; }
+  menus.forEach((m,i)=>{
+    const div=document.createElement('div'); div.className='del-menu-item';
+    const prices=[];
+    if(m.hot!=null) prices.push('HOT '+m.hot.toLocaleString());
+    if(m.ice!=null) prices.push('ICE '+m.ice.toLocaleString());
+    div.innerHTML='<span class="dm-name"></span><span class="dm-price">'+prices.join(' / ')+'</span><button class="btn-del-menu">삭제</button>';
+    div.querySelector('.dm-name').textContent=m.name;
+    div.querySelector('.btn-del-menu').addEventListener('click',()=>{
+      if(!confirm('"'+m.name+'" 메뉴를 삭제할까요?')) return;
+      BRANDS[delBrand].menus.splice(i,1);
+      saveMenuData();
+      if(delBrand===brand){ renderCats(); renderMenuSelect(); }
+      renderDelMenuList(); renderPriceTable();
+      toast('"'+m.name+'" 삭제되었습니다');
+    });
+    list.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════
+   관리자 모달 열기/닫기
+═══════════════════════════════════════ */
+/* ── 임시 설정 상태 (저장 전) ── */
+let tmpBrands = [];     // 선택된 가게
+let tmpDeadlineTs = 0;  // 마감시각 (0=없음)
+let tmpHeadcount = 0;   // 주문잔수 (0=없음)
+let tmpPriceLimit = 0;  // 1인당 주문가격 한도 (0=제한없음)
+
+function initTempSettings(){
+  tmpBrands = [...lockedBrands];
+  tmpDeadlineTs = deadlineTs;
+  tmpHeadcount = totalHeadcount;
+  // 가게 카드 선택 상태
+  document.querySelectorAll('.store-card').forEach(c=>
+    c.classList.toggle('selected', tmpBrands.includes(c.dataset.store))
+  );
+  // 마감시간 입력
+  if(tmpDeadlineTs > Date.now()){
+    const d = new Date(tmpDeadlineTs);
+    $('inpDeadlineTime').value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  } else {
+    const d = new Date(Date.now() + 30*60*1000);
+    $('inpDeadlineTime').value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    if(!tmpDeadlineTs) tmpDeadlineTs = 0;
+  }
+  // 잔수 입력
+  $('inpHeadcount').value = tmpHeadcount || '';
+  // 가격 한도 입력
+  tmpPriceLimit = maxPricePerOrder;
+  $('inpPriceLimit').value = tmpPriceLimit || '';
+  updateOrderSummary();
+}
+
+function updateOrderSummary(){
+  // 팀
+  const teamEl = document.getElementById('summaryTeam');
+  if(teamEl) teamEl.innerHTML = '🔗 팀: <span style="color:'+(teamName?'var(--primary)':'var(--sub)')+';">'+(teamName||'전체 공용')+'</span>';
+
+  // 가게
+  const sel = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
+  const storeStr = sel.length ? sel.map(b=>STORE_META[b].name).join(', ') : '⚠️ 필수 선택';
+  $('summaryStore').innerHTML = '🏪 가게: <span style="color:'+(sel.length?'var(--primary)':'#EF4444')+';">'+(sel.length?storeStr:'⚠️ 필수 선택')+'</span>';
+
+  // 마감시간
+  const dlVal = $('inpDeadlineTime').value;
+  const dlStr = (tmpDeadlineTs===0 && !dlVal) ? '설정 없음'
+    : dlVal ? (() => {
+        const [hh,mm] = dlVal.split(':').map(Number);
+        const ampm = hh<12?'오전':'오후'; const h12=hh%12||12;
+        return ampm+' '+h12+':'+String(mm).padStart(2,'0');
+      })() : '설정 없음';
+  $('summaryDeadline').innerHTML = '⏰ 마감: <span style="color:'+(dlVal?'var(--primary)':'var(--sub)')+';">'+dlStr+'</span>';
+
+  // 잔수
+  const hcVal = parseInt($('inpHeadcount').value||'0',10);
+  $('summaryHeadcount').innerHTML = '📋 잔수: <span style="color:'+(hcVal?'var(--primary)':'var(--sub)')+';">'+(hcVal?hcVal+'잔':'설정 없음')+'</span>';
+  // 가격 한도
+  const plVal = parseInt(($('inpPriceLimit')||{value:''}).value||'0',10);
+  const plEl = document.getElementById('summaryPriceLimit');
+  if(plEl) plEl.innerHTML = '💰 가격: <span style="color:'+(plVal?'#EA580C':'var(--sub)')+';">'+(plVal?plVal.toLocaleString()+'원 이하':'제한 없음')+'</span>';
+}
+
+/* ── 주문설정 모달 ── */
+function openOrderModal(){
+  initTempSettings();
+  switchOrderTab('store');
+  $('modalOrder').classList.add('show');
+}
+function closeOrderModal(){ $('modalOrder').classList.remove('show'); }
+function switchOrderTab(tab){
+  document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
+  document.querySelectorAll('#modalOrder .admin-panel').forEach(p=>p.classList.remove('show'));
+  const p = $('opanel'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if(p) p.classList.add('show');
+}
+
+/* ── 1인당 주문가격 한도 ── */
+
+document.querySelectorAll('.price-limit-preset').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const v = parseInt(btn.dataset.pl, 10);
+    $('inpPriceLimit').value = v;
+    tmpPriceLimit = v;
+    updateOrderSummary();
+  });
+});
+
+function switchOrderTab(tab){
+  document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
+  document.querySelectorAll('#modalOrder .admin-panel').forEach(p=>p.classList.remove('show'));
+  const p = $('opanel'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if(p) p.classList.add('show');
+}
+
+
+/* ── 메뉴수정 브랜드 탭 동적 렌더링 ── */
+function renderMenuBrandTabs(){
+  const activeBrands = lockedBrands.length > 0 ? lockedBrands : ['paik','mega','compose'];
+  const BNAMES = {paik:'빽다방', mega:'메가커피', compose:'컴포즈'};
+
+  // 가격수정 브랜드 탭
+  ['adminBrandTabs'].forEach(tabId=>{
+    const wrap = $(tabId);
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    activeBrands.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'admin-tab' + (i===0?' active':'');
+      btn.dataset.abrand = b;
+      btn.textContent = BNAMES[b];
+      btn.addEventListener('click',()=>{
+        adminBrand = b;
+        document.querySelectorAll('[data-abrand]').forEach(x=>x.classList.toggle('active',x.dataset.abrand===b));
+        renderPriceTable();
+      });
+      wrap.appendChild(btn);
+    });
+    adminBrand = activeBrands[0];
+  });
+
+  // 메뉴삭제 브랜드 탭
+  ['delBrandTabs'].forEach(tabId=>{
+    const wrap = $(tabId);
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    activeBrands.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'admin-tab' + (i===0?' active':'');
+      btn.dataset.dbrand = b;
+      btn.textContent = BNAMES[b];
+      btn.addEventListener('click',()=>{
+        delBrand = b;
+        document.querySelectorAll('[data-dbrand]').forEach(x=>x.classList.toggle('active',x.dataset.dbrand===b));
+        renderDelMenuList();
+      });
+      wrap.appendChild(btn);
+    });
+    delBrand = activeBrands[0];
+  });
+}
+/* ── 메뉴수정 모달 ── */
+function openMenuModal(){
+  renderMenuBrandTabs();
+  renderPriceTable();
+  updateAddCatSelect();
+  renderDelMenuList();
+  const ts = parseInt(localStorage.getItem(LS_MENU_TS_KEY)||'0', 10);
+  const el = $('menuLastUpdated');
+  if(el){
+    if(ts){
+      const d2 = new Date(ts);
+      el.textContent = '마지막 업데이트: '+(d2.getMonth()+1)+'/'+d2.getDate()+' '+
+        String(d2.getHours()).padStart(2,'0')+':'+String(d2.getMinutes()).padStart(2,'0');
+    } else { el.textContent = '마지막 업데이트: 아직 없음'; }
+  }
+  switchMenuTab('add');
+  $('modalMenu').classList.add('show');
+}
+function closeMenuModal(){ $('modalMenu').classList.remove('show'); }
+function switchMenuTab(tab){
+  document.querySelectorAll('.admin-tab[data-mtab]').forEach(b=>b.classList.toggle('active',b.dataset.mtab===tab));
+  document.querySelectorAll('#modalMenu .admin-panel').forEach(p=>p.classList.remove('show'));
+  const p = $('mpanel'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if(p) p.classList.add('show');
+}
+
+/* 하위 호환: openAdmin/closeAdmin → 주문설정 */
+function openAdmin(){ openOrderModal(); }
+function closeAdmin(){ closeOrderModal(); closeMenuModal(); }
+
+/* ═══════════════════════════════════════
+   영수증
+═══════════════════════════════════════ */
+function aggregate(){
+  const map=new Map();
+  orders.forEach(o=>{
+    const key=[o.temp,o.menu,o.shot?'샷추가':'',o.memo].join('|');
+    if(!map.has(key)) map.set(key,{...o,qty:0,sum:0,people:[]});
+    const g=map.get(key); g.qty++; g.sum+=o.price; g.people.push(o.name);
+  });
+  return [...map.values()].sort((a,b)=>b.qty-a.qty);
+}
+
+/* ── 통합주문서 ── */
+async function openAllReceipt(){
+  // 세션 전체 브랜드 주문 조회
+  let allData = [];
+  try{
+    allData = await sbFetch(
+      `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=brand,created_at.asc`
+    );
+  }catch(e){ toast('DB 오류: '+e.message); return; }
+
+  if(!allData.length){ toast('주문이 없습니다'); return; }
+
+  // 브랜드별 그룹핑
+  const brandGroups = {};
+  allData.forEach(o=>{
+    if(!brandGroups[o.brand]) brandGroups[o.brand] = [];
+    brandGroups[o.brand].push(o);
+  });
+
+  const activeBrands = Object.keys(brandGroups);
+  const grandTotal = allData.reduce((s,o)=>s+o.price, 0);
+
+  $('arcMeta').textContent = todayStr() + ' · 총 ' + allData.length + '잔 · ' + activeBrands.length + '개 가게';
+  $('arcTotal').textContent = won(grandTotal);
+
+  const body = $('arcBody');
+  body.innerHTML = '';
+
+  activeBrands.forEach(b=>{
+    const bOrders = brandGroups[b];
+    const bTotal = bOrders.reduce((s,o)=>s+o.price, 0);
+    const meta = STORE_META[b] || { name: b, icon:'☕' };
+
+    // 브랜드별 집계
+    const map = new Map();
+    bOrders.forEach(o=>{
+      const key=[o.temp,o.menu,o.shot?'샷추가':'',o.memo].join('|');
+      if(!map.has(key)) map.set(key,{...o,qty:0,sum:0,people:[]});
+      const g=map.get(key); g.qty++; g.sum+=o.price; g.people.push(o.name);
+    });
+    const groups = [...map.values()].sort((a,b)=>b.qty-a.qty);
+
+    const section = document.createElement('div');
+    section.className = 'arc-brand-section';
+
+    // 브랜드 헤더
+    const head = document.createElement('div');
+    head.className = 'arc-brand-head';
+    head.innerHTML = '<span class="arc-icon">'+meta.icon+'</span>'
+      +'<span>'+meta.name+'</span>'
+      +'<span class="arc-brand-total">'+bOrders.length+'잔 / '+won(bTotal)+'</span>';
+    section.appendChild(head);
+
+    // 메뉴 라인들
+    groups.forEach(g=>{
+      const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+      const line = document.createElement('div');
+      line.className = 'receipt-line';
+      line.innerHTML = '<span class="nm"><b>'+g.temp+'</b> <span class="gname"></span>'
+        +(opts?' <span style="color:#7A7670;font-size:.8em">('+opts+')</span>':'')
+        +'<span class="ppl"></span></span>'
+        +'<span class="qt">× '+g.qty+'</span>'
+        +'<span class="pr">'+won(g.sum)+'</span>';
+      line.querySelector('.gname').textContent = g.menu;
+      line.querySelector('.ppl').textContent = g.people.join(', ');
+      section.appendChild(line);
+    });
+
+    // 브랜드 소계
+    const sub = document.createElement('div');
+    sub.style.cssText = 'display:flex;justify-content:flex-end;font-size:.78rem;color:var(--sub);padding:4px 2px 0;';
+    sub.textContent = '소계 ' + won(bTotal);
+    section.appendChild(sub);
+
+    body.appendChild(section);
+
+    // 구분선 (마지막 제외)
+    if(b !== activeBrands[activeBrands.length-1]){
+      const hr = document.createElement('div');
+      hr.style.cssText = 'border-top:1px dashed var(--line);margin:10px 0;';
+      body.appendChild(hr);
+    }
+  });
+
+  $('modalAllReceipt').classList.add('show');
+}
+
+async function copyAllReceipt(){
+  let allData = [];
+  try{
+    allData = await sbFetch(
+      `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=brand,created_at.asc`
+    );
+  }catch(e){ toast('DB 오류'); return; }
+
+  if(!allData.length){ toast('주문이 없습니다'); return; }
+
+  const brandGroups = {};
+  allData.forEach(o=>{
+    if(!brandGroups[o.brand]) brandGroups[o.brand] = [];
+    brandGroups[o.brand].push(o);
+  });
+
+  const grandTotal = allData.reduce((s,o)=>s+o.price,0);
+  const lines = [];
+  lines.push('🗂 통합 주문서 (' + todayStr() + ')');
+  lines.push('══════════════');
+
+  Object.keys(brandGroups).forEach(b=>{
+    const bOrders = brandGroups[b];
+    const bTotal = bOrders.reduce((s,o)=>s+o.price,0);
+    const meta = STORE_META[b]||{name:b,icon:'☕'};
+    lines.push('');
+    lines.push(meta.icon + ' ' + meta.name + ' (' + bOrders.length + '잔)');
+    lines.push('──────────────');
+
+    const map = new Map();
+    bOrders.forEach(o=>{
+      const key=[o.temp,o.menu,o.shot?'샷추가':'',o.memo].join('|');
+      if(!map.has(key)) map.set(key,{...o,qty:0,sum:0});
+      const g=map.get(key); g.qty++; g.sum+=o.price;
+    });
+    [...map.values()].sort((a,bb)=>bb.qty-a.qty).forEach(g=>{
+      const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+      lines.push(g.temp+' '+g.menu+(opts?' ('+opts+')':'')+' x '+g.qty);
+    });
+    lines.push('소계: '+won(bTotal));
+  });
+
+  lines.push('');
+  lines.push('══════════════');
+  lines.push('전체 합계: '+won(grandTotal)+' ('+allData.length+'잔)');
+
+  const txt = lines.join('\n');
+
+  navigator.clipboard.writeText(txt)
+    .then(()=>toast('통합주문서가 복사되었습니다 📋'))
+    .catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=txt;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+      toast('통합주문서가 복사되었습니다 📋');
+    });
+}
+function openReceipt(){
+  if(!orders.length){ toast('주문이 아직 없습니다'); return; }
+  const groups=aggregate();
+  const total=orders.reduce((s,o)=>s+o.price,0);
+  $('rcShop').textContent=BRANDS[brand].label+' 주문서';
+  $('rcMeta').textContent=todayStr()+' · '+(teamName||'공용')+' · '+sessionLabel()+' · 총 '+orders.length+'잔';
+  const body=$('rcBody'); body.innerHTML='';
+  groups.forEach(g=>{
+    const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+    const line=document.createElement('div'); line.className='receipt-line';
+    line.innerHTML='<span class="nm"><b>'+g.temp+'</b> <span class="gname"></span>'+(opts?' <span style="color:#7A7670;font-size:.8em">('+opts+')</span>':'')+'<span class="ppl"></span></span><span class="qt">× '+g.qty+'</span><span class="pr">'+won(g.sum)+'</span>';
+    line.querySelector('.gname').textContent=g.menu;
+    line.querySelector('.ppl').textContent=g.people.join(', ');
+    body.appendChild(line);
+  });
+  $('rcTotal').textContent=won(total);
+  $('modalReceipt').classList.add('show');
+}
+function copyReceipt(){
+  const groups=aggregate();
+  const total=orders.reduce((s,o)=>s+o.price,0);
+  let txt='📋 '+BRANDS[brand].label+' 주문서 ('+todayStr()+')\n──────────────\n';
+  groups.forEach(g=>{
+    const opts=[g.shot?'샷추가':null,g.memo||null].filter(Boolean).join(', ');
+    txt+=g.temp+' '+g.menu+(opts?' ('+opts+')':'')+' × '+g.qty+'\n';
+  });
+  txt+='──────────────\n총 '+orders.length+'잔 / '+won(total);
+  navigator.clipboard.writeText(txt).then(()=>toast('주문서가 복사되었습니다 📋')).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('주문서가 복사되었습니다 📋');
+  });
+}
+
+/* ── 유틸 ── */
+function todayStr(){
+  const d=new Date();
+  return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+'일월화수목금토'[d.getDay()]+')';
+}
+let toastTimer;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ═══════════════════════════════════════
+   이벤트 바인딩
+═══════════════════════════════════════ */
+// 브랜드 탭
+document.querySelectorAll('.brand-tab').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const b=btn.dataset.brand; if(b===brand) return;
+    if(lockedBrands.length > 0 && !lockedBrands.includes(b)){ toast('🔒 관리자가 가게를 고정했습니다'); return; }
+    if(orders.length&&!confirm('브랜드를 '+BRANDS[b].label+'(으)로 바꾸면\n현재 세션 주문이 보이지 않게 됩니다.\n계속할까요?')) return;
+    brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect(); await fetchOrders();
+  });
+});
+// 온도
+document.querySelectorAll('#tempSeg button').forEach(b=>b.addEventListener('click',()=>setTemp(b.dataset.temp)));
+$('selMenu').addEventListener('change',onMenuChange);
+$('btnAdd').addEventListener('click',addOrder);
+$('inpName').addEventListener('keydown',e=>{ if(e.key==='Enter') addOrder(); });
+$('btnReset').addEventListener('click',async()=>{
+  if(!orders.length) return;
+  if(!confirm('현재 세션 주문 '+orders.length+'건을 전부 삭제할까요?')) return;
+  try{ await deleteSession(); await fetchOrders(); toast('초기화되었습니다'); }catch(e){ toast('초기화 실패: '+e.message); }
+});
+$('btnNewSession').addEventListener('click',()=>{
+  // PIN 인증 후 새 주문 시작
+  openPinModal('verify', 'newSession');
+});
+// 영수증
+$('btnOpenReceipt').addEventListener('click',openReceipt);
+$('btnOpenAllReceipt').addEventListener('click',openAllReceipt);
+$('btnCopyAll').addEventListener('click',copyAllReceipt);
+$('btnCloseAllReceipt').addEventListener('click',()=>$('modalAllReceipt').classList.remove('show'));
+$('modalAllReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+$('btnCopy').addEventListener('click',copyReceipt);
+$('btnCloseReceipt').addEventListener('click',()=>$('modalReceipt').classList.remove('show'));
+$('modalReceipt').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+/* ═══════════════════════════════════════
+   PIN 잠금
+═══════════════════════════════════════ */
+const LS_PIN_KEY = 'coffeeAdminPin_v1';
+const DEFAULT_PIN = '0119';
+let pinBuffer = '';
+let pinMode = 'verify'; // 'verify' | 'set_new' | 'confirm_new'
+let pinNewTemp = '';
+
+function getPin(){ return localStorage.getItem(LS_PIN_KEY) || DEFAULT_PIN; }
+function savePin(p){ localStorage.setItem(LS_PIN_KEY, p); }
+
+let pinTarget = 'order'; // 'order' | 'menu'
+function openPinModal(mode = 'verify', target = 'order'){
+  pinMode = mode; pinBuffer = ''; pinNewTemp = ''; pinTarget = target;
+  renderPinDots();
+  $('pinErrorMsg').textContent = '';
+  if(mode === 'verify'){
+    const desc = {
+      'order':      '주문설정을 변경하려면\n관리자 PIN을 입력하세요',
+      'menu':       '메뉴를 수정하려면\n관리자 PIN을 입력하세요',
+      'newSession': '새 주문을 시작하면 현재 주문이 초기화됩니다.\n관리자 PIN을 입력하세요',
+    };
+    $('pinSub').textContent = desc[target] || '4자리 PIN을 입력하세요';
+  } else if(mode === 'set_new'){
+    $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
+  }
+  $('pinModalBg').classList.add('show');
+}
+function closePinModal(){
+  pinBuffer = ''; pinNewTemp = '';
+  $('pinModalBg').classList.remove('show');
+  renderPinDots();
+  $('pinErrorMsg').textContent = '';
+}
+
+function renderPinDots(){
+  for(let i=0;i<4;i++){
+    const dot = $('pd'+i);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+    dot.classList.remove('error');
+  }
+}
+
+function pinShakeError(msg){
+  for(let i=0;i<4;i++) $('pd'+i).classList.add('error');
+  $('pinErrorMsg').textContent = msg;
+  setTimeout(()=>{
+    pinBuffer = '';
+    renderPinDots();
+  }, 600);
+}
+
+function handlePinInput(k){
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  renderPinDots();
+  if(pinBuffer.length === 4){
+    setTimeout(()=> processPinComplete(), 150);
+  }
+}
+
+function handlePinDel(){
+  if(pinBuffer.length > 0){
+    pinBuffer = pinBuffer.slice(0, -1);
+    renderPinDots();
+    $('pinErrorMsg').textContent = '';
+  }
+}
+
+function processPinComplete(){
+  if(pinMode === 'verify'){
+    if(pinBuffer === getPin()){
+      closePinModal();
+      if(pinTarget === 'menu') openMenuModal();
+      else if(pinTarget === 'newSession'){
+        if(!confirm('새 세션을 시작하면 지금 화면이 초기화됩니다.\n(기존 데이터는 DB에 남아있습니다)\n계속할까요?')) return;
+        // 주문설정 완전 클리어
+        (async()=>{
+          await clearStoreLock();
+          await clearDeadlineData();
+          if(countdownTimer) clearInterval(countdownTimer);
+          $('deadlineBar').classList.remove('show');
+          await clearHeadcount();
+          maxPricePerOrder = 0; await savePriceLimit();
+          // 임시값도 초기화
+          tmpBrands=[]; tmpDeadlineTs=0; tmpHeadcount=0; tmpPriceLimit=0;
+          // 메뉴 재렌더링 (가격 한도 해제 반영)
+          renderMenuSelect();
+          renderHeadcountBar();
+          newSession();
+          openOrderModal();
+        })();
+      }
+      else openOrderModal();
+    } else {
+      pinShakeError('PIN이 틀렸습니다');
+    }
+  } else if(pinMode === 'set_new'){
+    pinNewTemp = pinBuffer;
+    pinBuffer = '';
+    pinMode = 'confirm_new';
+    $('pinSub').textContent = '새 PIN을 한번 더 입력하세요';
+    renderPinDots();
+    $('pinErrorMsg').textContent = '';
+  } else if(pinMode === 'confirm_new'){
+    if(pinBuffer === pinNewTemp){
+      savePin(pinBuffer);
+      closePinModal();
+      toast('✅ PIN이 변경되었습니다');
+    } else {
+      pinNewTemp = '';
+      pinMode = 'set_new';
+      pinShakeError('PIN이 일치하지 않습니다. 다시 입력하세요');
+      setTimeout(()=>{
+        $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
+      }, 700);
+    }
+  }
+}
+
+// PIN 키패드 이벤트
+document.querySelectorAll('.pin-key[data-k]').forEach(btn=>{
+  btn.addEventListener('click', ()=> handlePinInput(btn.dataset.k));
+});
+$('pinDelKey').addEventListener('click', handlePinDel);
+$('btnPinCancel').addEventListener('click', closePinModal);
+$('pinModalBg').addEventListener('click', e=>{ if(e.target===e.currentTarget) closePinModal(); });
+$('btnPinChange').addEventListener('click', ()=>{
+  // 현재 PIN 먼저 확인 후 변경 모드
+  closePinModal();
+  setTimeout(()=> openPinModal('set_new'), 200);
+});
+
+// 키보드 입력 지원
+document.addEventListener('keydown', e=>{
+  if(!$('pinModalBg').classList.contains('show')) return;
+  if(e.key >= '0' && e.key <= '9') handlePinInput(e.key);
+  else if(e.key === 'Backspace') handlePinDel();
+  else if(e.key === 'Escape') closePinModal();
+});
+
+// 관리자 버튼 → PIN 먼저
+// 주문설정 버튼
+
+/* ── 링크 모달 ── */
+async function openLinksModal(){
+  $('modalLinks').classList.add('show');
+  const list = await loadTeamList();
+  const container = $('linkModalList');
+  container.innerHTML = '';
+  if(!list.length){
+    container.innerHTML = '<div class="empty">팀 링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div>';
+    return;
+  }
+  list.forEach(team=>{
+    const cfg = setupCfgId || cfgId || '';
+    const cfgParam = cfg ? '&cfg='+cfg : '';
+    const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + cfgParam;
+    const orderUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + cfgParam + '&mode=order';
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#F8F7F4;border-radius:10px;padding:10px 12px;margin-bottom:8px;';
+    div.innerHTML =
+      '<div style="font-size:.92rem;font-weight:800;margin-bottom:8px;">'+team+'</div>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'+
+        '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">관리자</span>'+
+        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="au"></div>'+
+        '<button class="bca" style="border:none;background:var(--primary);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
+        '<button class="boa" style="border:1.5px solid var(--primary);background:#fff;color:var(--primary);font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:6px;">'+
+        '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">직원</span>'+
+        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="ou"></div>'+
+        '<button class="bco" style="border:none;background:#16A34A;color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
+        '<button class="boo" style="border:1.5px solid #16A34A;background:#fff;color:#16A34A;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
+      '</div>';
+    div.querySelector('.au').textContent = adminUrl;
+    div.querySelector('.ou').textContent = orderUrl;
+    function copyToClip(text, label){
+      navigator.clipboard.writeText(text)
+        .then(()=>toast('📋 '+label+' 복사됨'))
+        .catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+label+' 복사됨'); });
+    }
+    div.querySelector('.bca').addEventListener('click',()=>copyToClip(adminUrl, team+' 관리자 링크'));
+    div.querySelector('.bco').addEventListener('click',()=>copyToClip(orderUrl, team+' 직원 링크'));
+    div.querySelector('.boa').addEventListener('click',()=>window.open(adminUrl,'_blank'));
+    div.querySelector('.boo').addEventListener('click',()=>window.open(orderUrl,'_blank'));
+    container.appendChild(div);
+  });
+}
+
+$('btnShowLinks').addEventListener('click', openLinksModal);
+$('btnLinksClose').addEventListener('click',()=>$('modalLinks').classList.remove('show'));
+$('modalLinks').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+$('btnOrderOpen').addEventListener('click', ()=> openPinModal('verify', 'order'));
+$('btnOrderClose').addEventListener('click', closeOrderModal);
+$('btnChangePinFromOrder').addEventListener('click',()=>{ closeOrderModal(); setTimeout(()=>openPinModal('set_new'),200); });
+$('modalOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeOrderModal(); });
+
+/* ── 1인당 주문가격 한도 ── */
+async function loadPriceLimit(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=price_limit`
+    );
+    maxPricePerOrder = rows[0]?.price_limit || 0;
+  }catch(e){
+    console.warn('[가격한도] DB 로드 실패:', e.message);
+    maxPricePerOrder = 0;
+  }
+}
+async function savePriceLimit(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: cfgId||'__global__',
+        brand: '__global__',
+        price_limit: maxPricePerOrder,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[가격한도] DB 저장 실패:', e.message); }
+}
+
+document.querySelectorAll('.price-limit-preset').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const v = parseInt(btn.dataset.pl, 10);
+    $('inpPriceLimit').value = v;
+    tmpPriceLimit = v;
+    updateOrderSummary();
+  });
+});
+
+$('inpPriceLimit').addEventListener('input',()=>{
+  tmpPriceLimit = parseInt($('inpPriceLimit').value||'0', 10);
+  updateOrderSummary();
+});
+
+$('btnClearPriceLimit').addEventListener('click',()=>{
+  tmpPriceLimit = 0;
+  $('inpPriceLimit').value = '';
+  updateOrderSummary();
+  toast('가격 한도 해제됨 (저장 전)');
+});
+document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.addEventListener('click',()=>{ switchOrderTab(b.dataset.otab); updateOrderSummary(); }));
+// 주문설정 통합 저장
+$('btnSaveOrderSettings').addEventListener('click', async ()=>{
+  const btn = $('btnSaveOrderSettings');
+  console.log('[저장] cfgId:', cfgId, 'setupCfgId:', setupCfgId);
+
+  // 가게선택 필수 검증
+  const selBrands = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
+  if(selBrands.length === 0){
+    toast('⚠️ 가게를 최소 1개 선택해주세요');
+    switchOrderTab('store');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try{
+    // 가게 설정
+    await setStoreLock(selBrands);
+
+    // 마감시간
+    if(tmpDeadlineTs > Date.now()){
+      await setDeadline(tmpDeadlineTs);
+    } else {
+      await clearDeadlineData();
+      if(countdownTimer) clearInterval(countdownTimer);
+      $('deadlineBar').classList.remove('show');
+    }
+
+    // 주문잔수
+    const hcVal = parseInt($('inpHeadcount').value||'0', 10);
+    if(hcVal > 0){
+      await setHeadcount(hcVal);
+    } else {
+      await clearHeadcount();
+    }
+
+    // 가격 한도
+    maxPricePerOrder = parseInt($('inpPriceLimit').value||'0', 10);
+    await savePriceLimit();
+
+    // 저장 후 모달 닫기
+    closeOrderModal();
+    toast('✅ 주문설정이 저장되었습니다');
+    if(pageMode==='setup'){
+      cfgId = setupCfgId; // 저장된 cfgId 동기화
+      updateSetupSummary();
+      await renderSetupTeamList(); // 링크에 최신 cfg 반영
+    }
+  }catch(e){
+    toast('저장 실패: '+e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = '✅ 설정 저장';
+  }
+});
+
+// 전체 해제
+$('btnResetOrderSettings').addEventListener('click', async ()=>{
+  if(!confirm('모든 주문설정을 해제할까요?')) return;
+  // 임시값 초기화
+  document.querySelectorAll('.store-card').forEach(c=>c.classList.remove('selected'));
+  $('inpDeadlineTime').value = '';
+  $('inpHeadcount').value = '';
+  tmpDeadlineTs = 0; tmpHeadcount = 0;
+  updateOrderSummary();
+  // DB 반영
+  await clearStoreLock();
+  await clearDeadlineData();
+  if(countdownTimer) clearInterval(countdownTimer);
+  $('deadlineBar').classList.remove('show');
+  updateCurrentDeadlineBox();
+  await clearHeadcount();
+  updateCurrentHeadcountBox();
+  maxPricePerOrder = 0; await savePriceLimit();
+  $('inpPriceLimit').value = ''; tmpPriceLimit = 0;
+  // 모달 닫지 않고 가게선택 탭으로 이동 (가게선택 필수 안내)
+  switchOrderTab('store');
+  toast('🔄 전체 해제됨 — 가게를 다시 선택해주세요');
+});
+
+
+// 메뉴수정 버튼
+$('btnMenuOpen').addEventListener('click', ()=> openPinModal('verify', 'menu'));
+$('btnMenuClose').addEventListener('click', closeMenuModal);
+$('btnChangePinFromMenu').addEventListener('click',()=>{ closeMenuModal(); setTimeout(()=>openPinModal('set_new'),200); });
+$('modalMenu').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeMenuModal(); });
+document.querySelectorAll('.admin-tab[data-mtab]').forEach(b=>b.addEventListener('click',()=>switchMenuTab(b.dataset.mtab)));
+// 관리자 브랜드 탭 (가격)
+// 브랜드 탭 이벤트는 renderMenuBrandTabs()에서 동적 등록
+$('btnSavePrices').addEventListener('click',savePrices);
+$('addBrand').addEventListener('change',updateAddCatSelect);
+$('btnAddMenu').addEventListener('click',addMenu);
+
+/* ═══════════════════════════════════════
+   총 주문 인원 설정 (Supabase 연동)
+═══════════════════════════════════════ */
+let totalHeadcount = 0; // 0 = 미설정
+
+async function loadHeadcount(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=headcount`
+    );
+    totalHeadcount = data[0]?.headcount || 0;
+  }catch(e){
+    console.warn('[인원] DB 로드 실패:', e.message);
+    totalHeadcount = 0;
+  }
+}
+async function saveHeadcount(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: cfgId||'__global__', brand: '__global__',
+        headcount: totalHeadcount,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[인원] DB 저장 실패:', e.message); }
+}
+async function setHeadcount(n){
+  totalHeadcount = n;
+  await saveHeadcount();
+  renderHeadcountBar();
+  updateCurrentHeadcountBox();
+}
+async function clearHeadcount(){
+  totalHeadcount = 0;
+  try{
+    await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__`,
+      { method: 'PATCH',
+        headers: {'Prefer': 'return=representation'},
+        body: JSON.stringify({headcount: 0}) }
+    );
+  }catch(e){ console.warn('[인원] DB 초기화 실패:', e.message); }
+  $('headcountBar').classList.remove('show');
+  updateCurrentHeadcountBox();
+}
+
+function renderHeadcountBar(){
+  const bar = $('headcountBar');
+  if(!totalHeadcount){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+
+  // 세션 전체 주문 건수(잔 수) 기준 카운팅 — 동명이인 문제 없음
+  const done = allOrders.length;
+  const pending = Math.max(0, totalHeadcount - done);
+  const pct = Math.min(100, Math.round((done / totalHeadcount) * 100));
+
+  $('hcDone').textContent = done;
+  $('hcPending').textContent = pending;
+  $('hcTotal').textContent = totalHeadcount;
+  $('hcProgressFill').style.width = pct + '%';
+
+  const status = $('hcStatus');
+  if(pending === 0){
+    status.textContent = '✅ 전체 주문 완료!';
+    status.className = 'hc-status all-done';
+    $('hcProgressFill').style.background = '#16A34A';
+  } else {
+    status.textContent = `${pending}잔 남음 (${pct}% 완료)`;
+    status.className = 'hc-status';
+    $('hcProgressFill').style.background = pct >= 70 ? '#16A34A' : pct >= 40 ? '#F59E0B' : 'var(--primary)';
+  }
+}
+
+function updateCurrentHeadcountBox(){
+  const box = $('currentHeadcountBox');
+  if(!totalHeadcount){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  $('currentHeadcountVal').textContent = `총 ${totalHeadcount}명`;
+}
+
+// 관리자 패널 이벤트
+document.querySelectorAll('.hc-quick-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const n = parseInt(btn.dataset.hc, 10);
+    $('inpHeadcount').value = n;
+    tmpHeadcount = n;
+    updateOrderSummary();
+  });
+});
+
+$('inpHeadcount').addEventListener('input',()=>{
+  tmpHeadcount = parseInt($('inpHeadcount').value||'0',10);
+  updateOrderSummary();
+});
+
+$('btnClearHeadcount').addEventListener('click',()=>{
+  tmpHeadcount = 0;
+  $('inpHeadcount').value = '';
+  updateOrderSummary();
+  toast('주문잔수 해제됨 (저장 전)');
+});
+
+/* ═══════════════════════════════════════
+   가게설정 (다중선택 잠금) — Supabase 연동
+═══════════════════════════════════════ */
+let lockedBrands = []; // [] = 잠금 없음 (전체 사용)
+
+const STORE_META = {
+  paik:    { name:'빽다방',    icon:'🐔' },
+  mega:    { name:'메가커피',  icon:'☕' },
+  compose: { name:'컴포즈커피', icon:'🎵' },
+};
+
+async function loadStoreLock(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=locked_brand`
+    );
+    const raw = rows[0]?.locked_brand || '';
+    lockedBrands = raw ? raw.split(',').filter(b=>BRANDS[b]) : [];
+  }catch(e){
+    console.warn('[가게] DB 로드 실패:', e.message);
+    lockedBrands = [];
+  }
+  applyStoreLock();
+}
+
+async function saveStoreLock(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: cfgId||'__global__',
+        brand: '__global__',
+        locked_brand: lockedBrands.join(','),
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[가게] DB 저장 실패:', e.message); }
+}
+
+function applyStoreLock(){
+  const wrap = $('brandTabsWrap');
+  if(lockedBrands.length > 0){
+    wrap.classList.add('brand-locked');
+    // 선택된 가게만 탭 표시, 나머지 숨김
+    // brand-hidden 클래스로 숨기기 (display:none) — 클릭은 허용
+    wrap.querySelectorAll('.brand-tab').forEach(btn=>{
+      const b = btn.dataset.brand;
+      btn.classList.toggle('brand-hidden', !lockedBrands.includes(b));
+    });
+    // 현재 브랜드가 선택 목록에 없으면 첫번째로 전환
+    if(!lockedBrands.includes(brand)){
+      brand = lockedBrands[0];
+      saveSession();
+      applyBrandTheme(); renderCats(); renderMenuSelect();
+    }
+  } else {
+    wrap.classList.remove('brand-locked');
+    wrap.querySelectorAll('.brand-tab').forEach(btn=>{
+      btn.classList.remove('brand-hidden');
+    });
+  }
+  // 가게 2개 이상 선택 시 통합주문서 버튼 표시
+  const allBtn = $('btnOpenAllReceipt');
+  if(allBtn) allBtn.style.display = lockedBrands.length >= 2 ? '' : 'none';
+}
+
+async function setStoreLock(brands){
+  lockedBrands = brands;
+  await saveStoreLock();
+  applyStoreLock();
+  updateCurrentStoreBox();
+  renderStorePanelSelection();
+}
+
+async function clearStoreLock(){
+  lockedBrands = [];
+  await saveStoreLock();
+  applyStoreLock();
+  updateCurrentStoreBox();
+}
+
+function updateCurrentStoreBox(){
+  const box = $('currentStoreBox');
+  if(!lockedBrands.length){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  $('currentStoreIcon').textContent = lockedBrands.map(b=>STORE_META[b].icon).join('');
+  $('currentStoreVal').textContent = lockedBrands.map(b=>STORE_META[b].name).join(', ');
+}
+
+function renderStorePanelSelection(){
+  ['paik','mega','compose'].forEach(b=>{
+    $('storeCard'+b.charAt(0).toUpperCase()+b.slice(1))
+      .classList.toggle('selected', lockedBrands.includes(b));
+  });
+  updateCurrentStoreBox();
+}
+
+// 가게 카드 토글 클릭 (다중선택)
+document.querySelectorAll('.store-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    card.classList.toggle('selected');
+    if(typeof updateOrderSummary === 'function') updateOrderSummary();
+  });
+});
+
+// 가게 전체 해제 버튼
+$('btnUnlockStore').addEventListener('click',()=>{
+  document.querySelectorAll('.store-card').forEach(c=>c.classList.remove('selected'));
+  updateOrderSummary();
+  toast('가게 선택 해제됨 (저장 전)');
+});
+
+/* ═══════════════════════════════════════
+   마감시간 카운트다운 (Supabase 연동)
+═══════════════════════════════════════ */
+let deadlineTs = 0;       // 마감 시각 (타임스탬프 ms)
+let deadlineStartTs = 0;  // 설정 시작 시각 (진행바 계산용)
+let countdownTimer = null;
+
+async function loadDeadline(){
+  try{
+    const data = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=deadline_ts,deadline_start_ts`
+    );
+    deadlineTs = data[0]?.deadline_ts || 0;
+    deadlineStartTs = data[0]?.deadline_start_ts || 0;
+  }catch(e){
+    console.warn('[마감] DB 로드 실패:', e.message);
+    deadlineTs = 0; deadlineStartTs = 0;
+  }
+}
+async function saveDeadline(){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: cfgId||'__global__', brand: '__global__',
+        deadline_ts: deadlineTs,
+        deadline_start_ts: deadlineStartTs,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[마감] DB 저장 실패:', e.message); }
+}
+async function clearDeadlineData(){
+  deadlineTs=0; deadlineStartTs=0;
+  try{
+    await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__`,
+      { method: 'PATCH',
+        headers: {'Prefer': 'return=representation'},
+        body: JSON.stringify({deadline_ts: 0, deadline_start_ts: 0}) }
+    );
+  }catch(e){ console.warn('[마감] DB 초기화 실패:', e.message); }
+}
+
+async function setDeadline(endTs){
+  deadlineTs = endTs;
+  deadlineStartTs = Date.now();
+  await saveDeadline();
+  startCountdown();
+  updateCurrentDeadlineBox();
+}
+
+function startCountdown(){
+  if(countdownTimer) clearInterval(countdownTimer);
+  tickCountdown();
+  countdownTimer = setInterval(tickCountdown, 1000);
+}
+
+function tickCountdown(){
+  const bar = $('deadlineBar');
+  if(!deadlineTs){ bar.classList.remove('show'); return; }
+
+  const now = Date.now();
+  const remaining = deadlineTs - now; // ms
+
+  if(remaining <= 0){
+    // 마감됨
+    bar.className = 'deadline-bar show ended';
+    $('deadlineLabel').textContent = '🔴 주문 마감';
+    $('deadlineCountdown').textContent = '마감됨';
+    $('deadlineEndTime').textContent = '';
+    $('deadlineProgress').style.width = '0%';
+    clearInterval(countdownTimer);
+    return;
+  }
+
+  bar.classList.add('show');
+
+  const totalMs = deadlineTs - deadlineStartTs;
+  const pct = Math.max(0, Math.min(100, (remaining / totalMs) * 100));
+
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const timeStr = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+
+  // 5분 이하면 긴박 모드
+  if(remaining <= 5 * 60 * 1000){
+    bar.className = 'deadline-bar show urgent';
+    $('deadlineLabel').textContent = '⚠️ 곧 마감!';
+  } else {
+    bar.className = 'deadline-bar show';
+    $('deadlineLabel').textContent = '⏰ 주문 마감까지';
+  }
+
+  $('deadlineCountdown').textContent = timeStr;
+  $('deadlineProgress').style.width = pct + '%';
+
+  // 마감 시각 표시 (오전/오후 HH:MM)
+  const endD = new Date(deadlineTs);
+  const hh = endD.getHours(), mm = endD.getMinutes();
+  const ampm = hh < 12 ? '오전' : '오후';
+  const hh12 = hh % 12 || 12;
+  $('deadlineEndTime').textContent = `마감 ${ampm} ${hh12}:${String(mm).padStart(2,'0')}`;
+}
+
+function updateCurrentDeadlineBox(){
+  const box = $('currentDeadlineBox');
+  if(!deadlineTs){ box.classList.remove('show'); return; }
+  box.classList.add('show');
+  const d = new Date(deadlineTs);
+  const hh=d.getHours(), mm=d.getMinutes();
+  const ampm=hh<12?'오전':'오후';
+  const hh12=hh%12||12;
+  $('currentDeadlineVal').textContent = `${ampm} ${hh12}:${String(mm).padStart(2,'0')} (${todayStr()})`;
+}
+
+// 관리자 - 마감시간 패널 이벤트
+// 프리셋 (+N분)
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const min = parseInt(btn.dataset.min, 10);
+    const end = new Date(Date.now() + min * 60 * 1000);
+    $('inpDeadlineTime').value = String(end.getHours()).padStart(2,'0')+':'+String(end.getMinutes()).padStart(2,'0');
+    tmpDeadlineTs = end.getTime();
+    updateOrderSummary();
+    toast(`⏰ ${min}분 후로 설정됨 (저장 전)`);
+  });
+});
+
+// 시간 직접 입력
+// inpDeadlineTime 변경 시 summary 갱신
+$('inpDeadlineTime').addEventListener('change',()=>{
+  const val = $('inpDeadlineTime').value;
+  if(val){
+    const [hh,mm] = val.split(':').map(Number);
+    const now = new Date();
+    const end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm,0,0);
+    if(end.getTime()<=Date.now()) end.setDate(end.getDate()+1);
+    tmpDeadlineTs = end.getTime();
+  } else { tmpDeadlineTs = 0; }
+  updateOrderSummary();
+});
+
+// 해제
+$('btnClearDeadline').addEventListener('click',()=>{
+  tmpDeadlineTs = 0;
+  $('inpDeadlineTime').value = '';
+  updateOrderSummary();
+  toast('마감시간 해제됨 (저장 전)');
+});
+
+/* ═══════════════════════════════════════
+   초기 실행
+═══════════════════════════════════════ */
+(async () => {
+  loadSession();
+  $('todayDate').textContent = todayStr();
+  // 팀 뱃지 표시
+  if(teamName){
+    const badge = $('teamBadge');
+    badge.textContent = teamName;
+    badge.style.display = 'inline';
+    document.title = orderMode === 'order' ? '☕ ' + teamName + ' 주문' : '☕ ' + teamName + ' 주문 취합';
+  }
+  $('sessionLabel').textContent = sessionLabel();
+  applyBrandTheme();
+  renderCats();
+  renderMenuSelect();
+
+  // DB 병렬 로드
+  await Promise.all([
+    fetchOrders(),
+    loadDeadline(),
+    loadHeadcount(),
+    loadStoreLock(),
+    loadPriceLimit(),
+    fetchMenusFromDB(),
+  ]);
+
+  // 마감시간 카운트다운 시작
+  if(deadlineTs && deadlineTs > Date.now()) startCountdown();
+  else if(deadlineTs) tickCountdown();
+
+  // 인원 현황 바
+  renderHeadcountBar();
+
+  // 가게/가격 설정 반영 후 메뉴 재렌더링
+  renderMenuSelect();
+  applyBrandTheme();
+
+  // 첫 접속 시 시작 화면 표시
+  if(pageMode === 'setup'){
+    await initSetupCfgId();
+    await renderSetupTeamList();
+    updateSetupSummary();
+  }
+
+  // 실시간 WebSocket
+  connectRealtime();
+  // 모바일 여부에 따라 배민/쿠팡 버튼 표시
+  applyMobileButtons();
+  // 역할 모드 적용
+  applyOrderMode();
+
+  // 관리자 DB 메뉴 새로고침 버튼
+  $('btnRefreshMenus').addEventListener('click', async () => {
+    toast('메뉴 새로고침 중...');
+    await fetchMenusFromDB(true);
+    toast('✅ 최신 메뉴로 업데이트되었습니다');
+    renderPriceTable();
+    renderDelMenuList();
+  });
+})();
+</script>
+</body>
+</html>
