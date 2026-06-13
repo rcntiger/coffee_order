@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 페이지 모드 즉시 결정 (깜빡임 방지) -->
+<script>
+(function(){
+  const p = new URLSearchParams(location.search);
+  const team = p.get('team');
+  const mode = p.get('mode');
+  if(!team){
+    document.documentElement.classList.add('mode-setup-pre');
+  }
+})();
+</script>
 <title>☕ 주문 취합</title>
 <style>
 :root{
@@ -437,6 +448,53 @@ body.brand-compose .welcome-screen{background:#5C3A21;}
 }
 .btn-welcome-start:active{transform:scale(.98);}
 .welcome-version{font-size:.7rem;opacity:.4;margin-top:20px;}
+/* ── 설정 페이지 (mode-setup) ── */
+/* team 파라미터 없으면 즉시 앱 숨김 (깜빡임 방지) */
+html.mode-setup-pre header,
+html.mode-setup-pre main,
+html.mode-setup-pre .bottom-bar,
+html.mode-setup-pre .deadline-bar,
+html.mode-setup-pre .headcount-bar,
+html.mode-setup-pre .welcome-screen{ display:none !important; }
+html.mode-setup-pre .setup-page{ display:block; }
+
+body.mode-setup header,
+body.mode-setup main,
+body.mode-setup .bottom-bar,
+body.mode-setup .deadline-bar,
+body.mode-setup .headcount-bar,
+body.mode-setup .welcome-screen{ display:none !important; }
+.setup-page{ display:none; }
+body.mode-setup .setup-page{ display:block; }
+
+.setup-header{
+  background:var(--primary);color:#fff;
+  padding:28px 20px 22px;text-align:center;
+  border-radius:0 0 24px 24px;margin-bottom:20px;transition:background .25s;
+}
+body.brand-mega .setup-header{background:#1C1B1A;}
+body.brand-compose .setup-header{background:#5C3A21;}
+.setup-header .sh-icon{font-size:2.8rem;margin-bottom:10px;}
+.setup-header h1{font-size:1.4rem;font-weight:900;margin-bottom:4px;}
+.setup-header p{font-size:.82rem;opacity:.8;line-height:1.5;}
+.setup-body{padding:0 16px 110px;}
+.setup-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.setup-card h2{font-size:.95rem;font-weight:800;margin-bottom:4px;}
+.setup-card p{font-size:.78rem;color:var(--sub);margin-bottom:12px;line-height:1.5;}
+.setup-team-card{background:#F8F7F4;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.setup-link-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.setup-link-row:last-child{margin-bottom:0;}
+.setup-link-badge{flex:none;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:5px;}
+.setup-link-url{flex:1;font-size:.68rem;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.setup-copy-btn{flex:none;border:none;font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.setup-empty-msg{text-align:center;color:var(--sub);font-size:.85rem;padding:18px 0;}
+.setup-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:.88rem;padding:8px 0;border-bottom:1px dashed var(--line);}
+.setup-summary-row:last-child{border-bottom:none;}
+.setup-summary-label{color:var(--sub);font-weight:600;}
+.setup-summary-val{font-weight:800;}
+.setup-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:10;}
+.btn-setup-done{width:100%;padding:15px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;}
+.btn-setup-done:disabled{opacity:.45;cursor:not-allowed;}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -604,6 +662,41 @@ body.brand-compose .welcome-screen{background:#5C3A21;}
 </style>
 </head>
 <body class="brand-paik">
+
+<!-- 설정 페이지 -->
+<div class="setup-page" id="setupPage">
+  <div class="setup-header">
+    <div class="sh-icon">☕</div>
+    <h1>주문 취합 설정</h1>
+    <p>팀별 링크를 생성하고<br>주문설정을 완료하세요</p>
+  </div>
+  <div class="setup-body">
+    <div class="setup-card">
+      <h2>🔗 팀 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
+      <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="setupInpTeam" placeholder="팀 이름 (예: 1팀, 소방1팀)" maxlength="10"
+          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
+        <button id="setupBtnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
+      </div>
+      <div id="setupTeamList"><div class="setup-empty-msg">팀을 추가해주세요</div></div>
+    </div>
+    <div class="setup-card">
+      <h2>⚙️ 주문설정 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수(가게)</span></h2>
+      <p>가게 선택은 필수입니다. 마감시간, 잔수, 가격은 선택사항입니다.</p>
+      <div id="setupSummary">
+        <div class="setup-summary-row"><span class="setup-summary-label">🏪 가게</span><span class="setup-summary-val" id="setupSumStore" style="color:#EF4444;">미설정 (필수)</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">⏰ 마감</span><span class="setup-summary-val" id="setupSumDeadline" style="color:var(--sub);">미설정</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">📋 잔수</span><span class="setup-summary-val" id="setupSumHeadcount" style="color:var(--sub);">미설정</span></div>
+        <div class="setup-summary-row"><span class="setup-summary-label">💰 가격</span><span class="setup-summary-val" id="setupSumPrice" style="color:var(--sub);">제한없음</span></div>
+      </div>
+      <button id="setupBtnSettings" style="width:100%;margin-top:12px;padding:11px 0;border:none;border-radius:10px;background:#EEF2FF;color:#3730A3;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">⚙️ 주문설정 열기</button>
+    </div>
+  </div>
+  <div class="setup-bottom">
+    <button class="btn-setup-done" id="setupBtnDone" disabled>설정을 완료해주세요</button>
+  </div>
+</div>
 
 <!-- 시작 화면 -->
 <div class="welcome-screen" id="welcomeScreen">
@@ -1394,6 +1487,7 @@ let brand='paik', curCat='전체', curTemp='ICE';
 let orders=[], allOrders=[], sessionId='', sessionCount=1, isAdding=false;
 let teamName = ''; // URL ?team=XXX 에서 읽어온 팀 이름
 let orderMode = 'admin'; // 'admin' | 'order' (직원용)
+let pageMode = 'setup';  // 'setup' | 'admin' | 'order'
 let lastOrderName = ''; // 직원이 마지막으로 입력한 이름
 let maxPricePerOrder = 0; // 1인당 주문가격 한도 (0=제한없음)
 let adminBrand='paik', delBrand='paik';
@@ -1410,8 +1504,15 @@ function loadTeamFromURL(){
   const m = params.get('mode');
   if(m === 'order') orderMode = 'order';
   else orderMode = 'admin';
-  // 즉시 body 클래스 적용 (렌더링 전)
-  if(orderMode === 'order') document.body.classList.add('mode-order');
+  if(!teamName){
+    pageMode = 'setup';
+    document.body.classList.add('mode-setup');
+  } else if(orderMode === 'order'){
+    pageMode = 'order';
+    document.body.classList.add('mode-order');
+  } else {
+    pageMode = 'admin';
+  }
 }
 
 function getTeamKey(){
@@ -1664,22 +1765,107 @@ function renderMyOrders(){
 /* ═══════════════════════════════════════
    시작 화면
 ═══════════════════════════════════════ */
-function isFirstSetup(){
-  // 가게 설정이 없으면 첫 설정으로 판단
-  return lockedBrands.length === 0 && orderMode === 'admin';
+/* ── 설정 페이지 JS ── */
+function updateSetupDoneBtn(){
+  const btn = $('setupBtnDone');
+  const hasTeam = document.querySelectorAll('.setup-team-card').length > 0;
+  const hasStore = lockedBrands.length > 0;
+  if(hasTeam && hasStore){
+    btn.disabled = false;
+    btn.textContent = '🚀 설정 완료 — 취합 시작';
+  } else if(!hasTeam){
+    btn.disabled = true;
+    btn.textContent = '팀 링크를 추가해주세요';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '주문설정에서 가게를 선택해주세요';
+  }
 }
 
-function showWelcomeScreen(){
-  $('welcomeScreen').classList.add('show');
+function updateSetupSummary(){
+  const storeEl = $('setupSumStore');
+  if(storeEl){
+    if(lockedBrands.length){
+      storeEl.textContent = lockedBrands.map(b=>STORE_META[b]?.name||b).join(', ');
+      storeEl.style.color = 'var(--primary)';
+    } else {
+      storeEl.textContent = '미설정 (필수)';
+      storeEl.style.color = '#EF4444';
+    }
+  }
+  const dlEl = $('setupSumDeadline');
+  if(dlEl){
+    if(deadlineTs > Date.now()){
+      const d=new Date(deadlineTs); const hh=d.getHours(); const mm=d.getMinutes();
+      dlEl.textContent=(hh<12?'오전':'오후')+' '+(hh%12||12)+':'+String(mm).padStart(2,'0');
+      dlEl.style.color='var(--primary)';
+    } else { dlEl.textContent='미설정'; dlEl.style.color='var(--sub)'; }
+  }
+  const hcEl = $('setupSumHeadcount');
+  if(hcEl){ hcEl.textContent=totalHeadcount?totalHeadcount+'잔':'미설정'; hcEl.style.color=totalHeadcount?'var(--primary)':'var(--sub)'; }
+  const plEl = $('setupSumPrice');
+  if(plEl){ plEl.textContent=maxPricePerOrder?maxPricePerOrder.toLocaleString()+'원 이하':'제한없음'; plEl.style.color=maxPricePerOrder?'#EA580C':'var(--sub)'; }
+  updateSetupDoneBtn();
 }
 
-function hideWelcomeScreen(){
-  $('welcomeScreen').classList.remove('show');
+async function renderSetupTeamList(){
+  const list = await loadTeamList();
+  const container = $('setupTeamList');
+  container.innerHTML = '';
+  if(!list.length){
+    container.innerHTML = '<div class="setup-empty-msg">팀을 추가해주세요</div>';
+    updateSetupDoneBtn(); return;
+  }
+  list.forEach(team=>{
+    const adminUrl = getBaseURL()+'?team='+encodeURIComponent(team);
+    const orderUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&mode=order';
+    const card = document.createElement('div');
+    card.className = 'setup-team-card';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
+        '<span style="font-size:.92rem;font-weight:800;">'+team+'</span>'+
+        '<button class="sdel" style="border:none;background:#FBE7E5;color:var(--danger);font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">삭제</button>'+
+      '</div>'+
+      '<div class="setup-link-row">'+
+        '<span class="setup-link-badge" style="background:#EEF2FF;color:#3730A3;">관리자</span>'+
+        '<span class="setup-link-url su-a"></span>'+
+        '<button class="setup-copy-btn sc-a" style="background:var(--primary);color:#fff;">복사</button>'+
+      '</div>'+
+      '<div class="setup-link-row">'+
+        '<span class="setup-link-badge" style="background:#F0FDF4;color:#16A34A;">직원</span>'+
+        '<span class="setup-link-url su-o"></span>'+
+        '<button class="setup-copy-btn sc-o" style="background:#16A34A;color:#fff;">복사</button>'+
+      '</div>';
+    card.querySelector('.su-a').textContent = adminUrl;
+    card.querySelector('.su-o').textContent = orderUrl;
+    const cp=(t,l)=>{ navigator.clipboard.writeText(t).then(()=>toast('📋 '+l+' 복사됨')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+l+' 복사됨'); }); };
+    card.querySelector('.sc-a').addEventListener('click',()=>cp(adminUrl,team+' 관리자'));
+    card.querySelector('.sc-o').addEventListener('click',()=>cp(orderUrl,team+' 직원'));
+    card.querySelector('.sdel').addEventListener('click', async ()=>{
+      const updated=(await loadTeamList()).filter(t=>t!==team);
+      await saveTeamList(updated); await renderSetupTeamList();
+    });
+    container.appendChild(card);
+  });
+  updateSetupDoneBtn();
 }
 
-$('btnWelcomeStart').addEventListener('click',()=>{
-  hideWelcomeScreen();
-  openOrderModal();
+$('setupBtnAddTeam').addEventListener('click', async ()=>{
+  const name=$('setupInpTeam').value.trim();
+  if(!name){ toast('팀 이름을 입력해주세요'); return; }
+  const list=await loadTeamList();
+  if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
+  list.push(name); await saveTeamList(list);
+  $('setupInpTeam').value=''; await renderSetupTeamList();
+  toast('✅ '+name+' 링크 생성됨');
+});
+$('setupInpTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') $('setupBtnAddTeam').click(); });
+$('setupBtnSettings').addEventListener('click',()=>openPinModal('verify','order'));
+$('setupBtnDone').addEventListener('click',()=>{
+  if(!lockedBrands.length){ toast('⚠️ 주문설정에서 가게를 선택해주세요'); return; }
+  document.body.classList.remove('mode-setup');
+  pageMode='admin';
+  toast('✅ 설정 완료! 주문 취합을 시작합니다');
 });
 /* ═══════════════════════════════════════
    역할 모드 적용 (admin / order)
@@ -3155,6 +3341,7 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
     // 저장 후 모달 닫기
     closeOrderModal();
     toast('✅ 주문설정이 저장되었습니다');
+    if(pageMode==='setup') updateSetupSummary();
   }catch(e){
     toast('저장 실패: '+e.message);
   }finally{
@@ -3608,7 +3795,10 @@ $('btnClearDeadline').addEventListener('click',()=>{
   renderMenuSelect();
 
   // 첫 접속 시 시작 화면 표시
-  if(isFirstSetup()) showWelcomeScreen();
+  if(pageMode === 'setup'){
+    await renderSetupTeamList();
+    updateSetupSummary();
+  }
 
   // 실시간 WebSocket
   connectRealtime();
