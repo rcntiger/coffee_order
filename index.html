@@ -2646,8 +2646,8 @@ async function addOrder(){
     return;
   }
 
-  // ── 동명 선주문 확인 ──
-  const prevOrders = allOrders.filter(o => o.name === name);
+  // ── 동명 선주문 확인 (현재 세션만) ──
+  const prevOrders = orders.filter(o => o.name === name);
   if(prevOrders.length > 0){
     const prevList = prevOrders.map(o =>
       `• ${o.temp} ${o.menu}${o.shot?' (샷추가)':''}${o.memo?' / '+o.memo:''} — ${o.price.toLocaleString()}원`
