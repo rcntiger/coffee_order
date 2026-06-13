@@ -359,7 +359,6 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 }
 /* ── 직원 모드 ── */
 body.mode-order .order-hide{ display:none !important; }
-body.mode-order .card:has(.order-hide-parent){ display:none !important; }
 
 body.mode-order .notice{ }
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
@@ -622,8 +621,8 @@ body.mode-order .notice{ }
     <button class="btn-add" id="btnAdd">주문 담기</button>
   </section>
 
-  <section class="card">
-    <h2 class="order-hide-parent">주문 현황 <span class="count-badge" id="countBadge">0명</span></h2>
+  <section class="card order-hide">
+    <h2>주문 현황 <span class="count-badge" id="countBadge">0명</span></h2>
     <div id="orderList"><div class="empty">아직 주문이 없습니다.</div></div>
     <div class="list-actions">
       <button class="btn-reset" id="btnReset">전체 초기화</button>
@@ -1362,8 +1361,13 @@ function connectRealtime(){
       if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
         const tbl = msg.payload?.table || msg.topic || '';
         if(tbl.includes('session_settings')){
-          loadDeadline().then(()=>{ if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown(); });
-          loadHeadcount().then(()=> renderHeadcountBar());
+          // 설정 전체 재로드
+          Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]).then(()=>{
+            if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
+            renderHeadcountBar();
+            renderMenuSelect(); // 가격 한도 반영
+            applyBrandTheme();  // 가게 설정 반영
+          });
         } else {
           fetchOrders();
         }
@@ -3323,6 +3327,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 인원 현황 바
   renderHeadcountBar();
+
+  // 가격 한도/가게 설정 반영 후 메뉴 재렌더링
+  renderMenuSelect();
 
   // 실시간 WebSocket
   connectRealtime();
