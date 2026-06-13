@@ -668,14 +668,14 @@ body.brand-compose .setup-header{background:#5C3A21;}
   <div class="setup-header">
     <div class="sh-icon">☕</div>
     <h1>주문 취합 설정</h1>
-    <p>팀별 링크를 생성하고<br>주문설정을 완료하세요</p>
+    <p>링크를 생성하고<br>주문설정을 완료하세요</p>
   </div>
   <div class="setup-body">
     <div class="setup-card">
-      <h2>🔗 팀 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
+      <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
       <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <input type="text" id="setupInpTeam" placeholder="팀 이름 (예: 1팀, 소방1팀)" maxlength="10"
+        <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
           style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
         <button id="setupBtnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
       </div>
@@ -690,7 +690,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
         <div class="setup-summary-row"><span class="setup-summary-label">📋 잔수</span><span class="setup-summary-val" id="setupSumHeadcount" style="color:var(--sub);">미설정</span></div>
         <div class="setup-summary-row"><span class="setup-summary-label">💰 가격</span><span class="setup-summary-val" id="setupSumPrice" style="color:var(--sub);">제한없음</span></div>
       </div>
-      <button id="setupBtnSettings" style="width:100%;margin-top:12px;padding:11px 0;border:none;border-radius:10px;background:#EEF2FF;color:#3730A3;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">⚙️ 주문설정 열기</button>
+      <button id="setupBtnSettings" style="width:100%;margin-top:12px;padding:11px 0;border:none;border-radius:10px;background:#EEF2FF;color:#3730A3;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">⚙️ 설정 열기</button>
     </div>
   </div>
   <div class="setup-bottom">
@@ -790,7 +790,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
 
 
   <section class="card">
-    <h2>주문 추가</h2>
+    <h2 class="order-hide">주문 추가</h2>
     <label for="inpName">이름</label>
     <input type="text" id="inpName" placeholder="예: 김철수" maxlength="10" autocomplete="off">
     <label>카테고리</label>
@@ -834,7 +834,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
   <p class="notice">※ 가격은 매장 상황에 따라 다를 수 있습니다.</p>
 </main>
 
-<div class="bottom-bar">
+<div class="bottom-bar order-hide">
   <div class="sum">
     <div class="cups" id="barCups">0잔</div>
     <div class="total" id="barTotal">0원</div>
@@ -917,8 +917,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
 
     <!-- 주문설정 탭 -->
     <div class="admin-tabs">
-      <button class="admin-tab active" data-otab="teamlink">🔗 링크 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
-      <button class="admin-tab" data-otab="store">🏪 가게 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
+      <button class="admin-tab active" data-otab="store">🏪 가게 <span style="color:#EF4444;font-size:.65rem;">필수</span></button>
       <button class="admin-tab" data-otab="deadline">⏰ 시간</button>
       <button class="admin-tab" data-otab="headcount">👥 잔수</button>
       <button class="admin-tab" data-otab="pricelimit">💰 가격</button>
@@ -1017,23 +1016,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
       </div>
     </div>
 
-    <!-- 패널: 팀 링크 생성 -->
-    <div class="admin-panel" id="opanelTeamlink">
-      <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:.82rem;font-weight:800;color:#0369A1;margin-bottom:6px;">🔗 팀별 주문 링크 생성</div>
-        <div style="font-size:.75rem;color:#0369A1;line-height:1.6;">각 팀 단톡방에 링크를 공유하면<br>팀별로 주문이 완전히 분리됩니다.</div>
-      </div>
-      <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">팀 이름 입력</div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <input type="text" id="inpTeamName" placeholder="예: 1팀, 소방1팀, 행정팀" maxlength="10"
-          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;">
-        <button id="btnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
-      </div>
-      <div id="teamLinkList" style="display:flex;flex-direction:column;gap:8px;"></div>
-      <div style="font-size:.72rem;color:var(--sub);text-align:center;margin-top:10px;line-height:1.6;">
-        링크 복사 후 카카오톡 단톡방에 공유하세요
-      </div>
-    </div>
+
 
     <!-- 하단 통합 저장 버튼 -->
     <div style="margin-top:16px;display:flex;gap:8px;">
@@ -1830,17 +1813,21 @@ async function renderSetupTeamList(){
         '<span class="setup-link-badge" style="background:#EEF2FF;color:#3730A3;">관리자</span>'+
         '<span class="setup-link-url su-a"></span>'+
         '<button class="setup-copy-btn sc-a" style="background:var(--primary);color:#fff;">복사</button>'+
+        '<button class="setup-copy-btn so-a" style="background:#fff;border:1.5px solid var(--primary);color:var(--primary);">열기</button>'+
       '</div>'+
       '<div class="setup-link-row">'+
         '<span class="setup-link-badge" style="background:#F0FDF4;color:#16A34A;">직원</span>'+
         '<span class="setup-link-url su-o"></span>'+
         '<button class="setup-copy-btn sc-o" style="background:#16A34A;color:#fff;">복사</button>'+
+        '<button class="setup-copy-btn so-o" style="background:#fff;border:1.5px solid #16A34A;color:#16A34A;">열기</button>'+
       '</div>';
     card.querySelector('.su-a').textContent = adminUrl;
     card.querySelector('.su-o').textContent = orderUrl;
     const cp=(t,l)=>{ navigator.clipboard.writeText(t).then(()=>toast('📋 '+l+' 복사됨')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+l+' 복사됨'); }); };
     card.querySelector('.sc-a').addEventListener('click',()=>cp(adminUrl,team+' 관리자'));
     card.querySelector('.sc-o').addEventListener('click',()=>cp(orderUrl,team+' 직원'));
+    card.querySelector('.so-a').addEventListener('click',()=>window.open(adminUrl,'_blank'));
+    card.querySelector('.so-o').addEventListener('click',()=>window.open(orderUrl,'_blank'));
     card.querySelector('.sdel').addEventListener('click', async ()=>{
       const updated=(await loadTeamList()).filter(t=>t!==team);
       await saveTeamList(updated); await renderSetupTeamList();
@@ -1874,6 +1861,9 @@ function applyOrderMode(){
   if(orderMode !== 'order') return;
   // CSS 클래스로 즉시 적용 — 타이밍 문제 없음
   document.body.classList.add('mode-order');
+  // 제목 변경
+  const h1 = document.querySelector('header h1');
+  if(h1) h1.childNodes[0].textContent = '☕ 주문 ';
   // 안내 문구 변경
   const notice = document.querySelector('.notice');
   if(notice) notice.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
@@ -1912,70 +1902,6 @@ function getBaseURL(){
   return window.location.origin + window.location.pathname;
 }
 
-async function renderTeamLinkList(){
-  const list = await loadTeamList();
-  const container = $('teamLinkList');
-  container.innerHTML = '';
-  if(!list.length){
-    container.innerHTML = '<div style="text-align:center;color:var(--sub);font-size:.82rem;padding:16px 0;">팀을 추가해주세요</div>';
-    return;
-  }
-  list.forEach(team=>{
-    const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team);
-    const orderUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + '&mode=order';
-    const div = document.createElement('div');
-    div.style.cssText = 'background:#F8F7F4;border-radius:10px;padding:10px 12px;margin-bottom:4px;';
-    div.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
-        '<span style="font-size:.92rem;font-weight:800;">'+team+'</span>' +
-        '<button class="btn-del-team" style="border:none;background:#FBE7E5;color:var(--danger);font-size:.72rem;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;font-family:inherit;">삭제</button>' +
-      '</div>' +
-      // 관리자용 링크
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-        '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">관리자</span>' +
-        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="admin-url"></div>' +
-        '<button class="btn-copy-admin" style="border:none;background:var(--primary);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>' +
-      '</div>' +
-      // 직원용 링크
-      '<div style="display:flex;align-items:center;gap:6px;">' +
-        '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">직원</span>' +
-        '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="order-url"></div>' +
-        '<button class="btn-copy-order" style="border:none;background:#16A34A;color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>' +
-      '</div>';
-
-    div.querySelector('.admin-url').textContent = adminUrl;
-    div.querySelector('.order-url').textContent = orderUrl;
-
-    function copyToClip(text, label){
-      navigator.clipboard.writeText(text)
-        .then(()=>toast('📋 '+label+' 복사됨'))
-        .catch(()=>{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+label+' 복사됨'); });
-    }
-    div.querySelector('.btn-copy-admin').addEventListener('click',()=>copyToClip(adminUrl, team+' 관리자 링크'));
-    div.querySelector('.btn-copy-order').addEventListener('click',()=>copyToClip(orderUrl, team+' 직원 링크'));
-    div.querySelector('.btn-del-team').addEventListener('click', async ()=>{
-      const list = await loadTeamList();
-      const updated = list.filter(t=>t!==team);
-      await saveTeamList(updated);
-      await renderTeamLinkList();
-    });
-    container.appendChild(div);
-  });
-}
-
-$('btnAddTeam').addEventListener('click', async ()=>{
-  const name = $('inpTeamName').value.trim();
-  if(!name){ toast('팀 이름을 입력해주세요'); return; }
-  const list = await loadTeamList();
-  if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
-  list.push(name);
-  await saveTeamList(list);
-  $('inpTeamName').value = '';
-  await renderTeamLinkList();
-  toast('✅ '+name+' 링크 생성됨');
-});
-
-$('inpTeamName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btnAddTeam').click(); });
 
 /* ── 고유번호 생성 ── */
 function makeOrderNum(index){
@@ -2718,8 +2644,7 @@ function updateOrderSummary(){
 /* ── 주문설정 모달 ── */
 function openOrderModal(){
   initTempSettings();
-  renderTeamLinkList(); // async — 비동기로 로드
-  switchOrderTab('teamlink');
+  switchOrderTab('store');
   $('modalOrder').classList.add('show');
 }
 function closeOrderModal(){ $('modalOrder').classList.remove('show'); }
@@ -3225,11 +3150,13 @@ async function openLinksModal(){
         '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">관리자</span>'+
         '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="au"></div>'+
         '<button class="bca" style="border:none;background:var(--primary);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
+        '<button class="boa" style="border:1.5px solid var(--primary);background:#fff;color:var(--primary);font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:6px;">'+
         '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">직원</span>'+
         '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="ou"></div>'+
         '<button class="bco" style="border:none;background:#16A34A;color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
+        '<button class="boo" style="border:1.5px solid #16A34A;background:#fff;color:#16A34A;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
       '</div>';
     div.querySelector('.au').textContent = adminUrl;
     div.querySelector('.ou').textContent = orderUrl;
@@ -3240,6 +3167,8 @@ async function openLinksModal(){
     }
     div.querySelector('.bca').addEventListener('click',()=>copyToClip(adminUrl, team+' 관리자 링크'));
     div.querySelector('.bco').addEventListener('click',()=>copyToClip(orderUrl, team+' 직원 링크'));
+    div.querySelector('.boa').addEventListener('click',()=>window.open(adminUrl,'_blank'));
+    div.querySelector('.boo').addEventListener('click',()=>window.open(orderUrl,'_blank'));
     container.appendChild(div);
   });
 }
@@ -3767,7 +3696,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
     const badge = $('teamBadge');
     badge.textContent = teamName;
     badge.style.display = 'inline';
-    document.title = '☕ ' + teamName + ' 주문 취합';
+    document.title = orderMode === 'order' ? '☕ ' + teamName + ' 주문' : '☕ ' + teamName + ' 주문 취합';
   }
   $('sessionLabel').textContent = sessionLabel();
   applyBrandTheme();
