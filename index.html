@@ -11,6 +11,8 @@
   const mode = p.get('mode');
   if(!team){
     document.documentElement.classList.add('mode-setup-pre');
+  } else if(mode === 'order'){
+    document.documentElement.classList.add('mode-order-pre');
   }
 })();
 </script>
@@ -399,6 +401,11 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   font-size:.72rem;color:var(--sub);text-align:center;margin-top:8px;line-height:1.5;
 }
 /* ── 직원 모드 ── */
+/* mode-order 즉시 적용 (body 파싱 전) */
+html.mode-order-pre .order-hide{ display:none !important; }
+html.mode-order-pre .my-orders-wrap{ display:block !important; }
+html.mode-order-pre .headcount-bar{ display:none !important; }
+html.mode-order-pre .bottom-bar{ display:none !important; }
 body.mode-order .order-hide{ display:none !important; }
 
 body.mode-order .notice{ }
