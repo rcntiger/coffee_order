@@ -500,7 +500,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
 .setup-header .sh-icon{font-size:2.8rem;margin-bottom:10px;}
 .setup-header h1{font-size:1.4rem;font-weight:900;margin-bottom:4px;}
 .setup-header p{font-size:.82rem;opacity:.8;line-height:1.5;}
-.setup-body{padding:0 16px 110px;}
+.setup-body{padding:0 16px 30px;}
 .setup-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
 .setup-card h2{font-size:.95rem;font-weight:800;margin-bottom:4px;}
 .setup-card p{font-size:.78rem;color:var(--sub);margin-bottom:12px;line-height:1.5;}
@@ -692,6 +692,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
     <div class="sh-icon">☕</div>
     <h1>주문 취합 설정</h1>
     <p>주문설정 후 링크를 생성하고<br>단톡방에 공유하세요</p>
+    <button id="setupBtnNewOrder" style="margin-top:16px;padding:10px 24px;border:none;border-radius:10px;background:var(--accent);color:#1E1E1E;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
   </div>
   <div class="setup-body">
     <div class="setup-card">
@@ -716,10 +717,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
       <div id="setupTeamList"><div class="setup-empty-msg">팀을 추가해주세요</div></div>
     </div>
   </div>
-  <div class="setup-bottom">
-    <button id="setupBtnNewOrder" style="flex:none;padding:15px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--sub);font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
-    <button class="btn-setup-done" id="setupBtnDone" disabled style="flex:1;">설정을 완료해주세요</button>
-  </div>
+
 </div>
 
 <!-- 시작 화면 -->
@@ -3167,7 +3165,7 @@ function openPinModal(mode = 'verify', target = 'order'){
   $('pinErrorMsg').textContent = '';
   if(mode === 'verify'){
     const desc = {
-      'order':      '주문설정을 변경하려면\n관리자 PIN을 입력하세요',
+      'order':      '4자리 PIN을 입력하세요',
       'menu':       '메뉴를 수정하려면\n관리자 PIN을 입력하세요',
       'newSession': '새 주문을 시작하면 현재 주문이 초기화됩니다.\n관리자 PIN을 입력하세요',
     };
