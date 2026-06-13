@@ -1541,13 +1541,42 @@ function loadSession(){
   try{
     const s=JSON.parse(localStorage.getItem(getTeamKey())||'{}');
     brand=s.brand||'paik';
-    // 팀이 다르면 세션 초기화
     sessionId=s.sessionId||todayBase()+'_'+(teamName||'')+'_1';
     sessionCount=s.count||1;
   }catch(e){ sessionId=todayBase()+'_'+(teamName||'')+'_1'; sessionCount=1; }
 }
+
+async function syncSessionFromDB(){
+  // cfgId가 있으면 DB에서 최신 sessionId 동기화
+  if(!cfgId) return;
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId)}&brand=eq.__global__&select=session_count,session_key`
+    );
+    if(rows[0]?.session_key){
+      sessionId = rows[0].session_key;
+      sessionCount = rows[0].session_count || 1;
+      saveSession();
+      console.log('[세션] DB에서 동기화:', sessionId);
+    }
+  }catch(e){ console.warn('[세션] DB 동기화 실패:', e.message); }
+}
 function saveSession(){
   localStorage.setItem(getTeamKey(),JSON.stringify({brand,sessionId,count:sessionCount}));
+  // cfgId가 있으면 DB에도 sessionId 저장
+  if(cfgId){
+    sbFetch('session_settings',{
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify({
+        session_id: cfgId,
+        brand: '__global__',
+        session_count: sessionCount,
+        session_key: sessionId,
+        updated_at: new Date().toISOString()
+      })
+    }).catch(e=>console.warn('[세션] DB 저장 실패:', e.message));
+  }
 }
 function sessionLabel(){
   return (teamName ? teamName+' · ' : '') + sessionCount+'회차';
@@ -3874,6 +3903,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
   applyBrandTheme();
   renderCats();
   renderMenuSelect();
+
+  // DB에서 세션 동기화 (새 주문 반영)
+  await syncSessionFromDB();
 
   // DB 병렬 로드
   await Promise.all([
