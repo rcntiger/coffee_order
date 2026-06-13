@@ -349,6 +349,11 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   background:#C00B1E;color:#fff;font-size:.85rem;font-weight:800;
   font-family:inherit;cursor:pointer;
 }
+.btn-store-app{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:var(--primary);color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;transition:background .2s;
+}
 .receipt-store-notice{
   font-size:.72rem;color:var(--sub);text-align:center;margin-top:8px;line-height:1.5;
 }
@@ -645,9 +650,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="btn-close-r" id="btnCloseReceipt">닫기</button>
     </div>
     <div class="order-app-btns">
-      <button class="btn-kakaomap" id="btnKakaoMap">🗺 카카오맵</button>
-      <button class="btn-baemin" id="btnBaemin">🛵 배달의민족</button>
-      <button class="btn-coupang" id="btnCoupang">🚀 쿠팡이츠</button>
+      <button class="btn-kakaomap" id="btnKakaoMap">🗺 매장 찾기</button>
+      <button class="btn-store-app" id="btnStoreApp">📱 가게 앱 열기</button>
     </div>
     <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
   </div>
@@ -671,9 +675,8 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="btn-close-r" id="btnCloseAllReceipt">닫기</button>
     </div>
     <div class="order-app-btns">
-      <button class="btn-kakaomap" id="btnKakaoMapAll">🗺 카카오맵</button>
-      <button class="btn-baemin" id="btnBaeminAll">🛵 배달의민족</button>
-      <button class="btn-coupang" id="btnCoupangAll">🚀 쿠팡이츠</button>
+      <button class="btn-kakaomap" id="btnKakaoMapAll">🗺 매장 찾기</button>
+      <button class="btn-store-app" id="btnStoreAppAll">📱 가게 앱 열기</button>
     </div>
     <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
   </div>
@@ -1430,6 +1433,18 @@ function renderOrders(){
 /* ═══════════════════════════════════════
    주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
 ═══════════════════════════════════════ */
+/* ── 모바일 여부에 따라 배민/쿠팡 버튼 표시 ── */
+function isMobile(){
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+function applyMobileButtons(){
+  const show = isMobile();
+  ['btnStoreApp','btnStoreAppAll'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = show ? '' : 'none';
+  });
+}
+
 
 // 현재 선택된 브랜드 검색 키워드
 function getStoreKeyword(){
@@ -1459,7 +1474,74 @@ function openKakaoMap(){
   }
 }
 
-// 배달의민족 딥링크 — 주문서 복사 후 앱 열기
+
+/* ── 가게 앱 딥링크 ── */
+const STORE_APP_LINKS = {
+  paik: {
+    name: '빽다방',
+    android: 'intent://paikdabang.com#Intent;scheme=paikdabang;package=com.paikdabang.app;end',
+    ios: 'paikdabang://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.paikdabang.app',
+    appstore: 'https://apps.apple.com/kr/app/%EB%B9%BD%EB%8B%A4%EB%B0%A9/id1086566155',
+  },
+  mega: {
+    name: '메가커피',
+    android: 'intent://mega-mgccoffee.com#Intent;scheme=megacoffee;package=com.mega.megacoffee;end',
+    ios: 'megacoffee://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.mega.megacoffee',
+    appstore: 'https://apps.apple.com/kr/app/%EB%A9%94%EA%B0%80mgc%EC%BB%A4%ED%94%BC/id1455484454',
+  },
+  compose: {
+    name: '컴포즈커피',
+    android: 'intent://composecoffee.com#Intent;scheme=composecoffee;package=com.compose.coffee;end',
+    ios: 'composecoffee://',
+    playstore: 'https://play.google.com/store/apps/details?id=com.compose.coffee',
+    appstore: 'https://apps.apple.com/kr/app/%EC%BB%B4%ED%8F%AC%EC%A6%88%EC%BB%A4%ED%94%BC/id1536152425',
+  },
+};
+
+function openStoreApp(){
+  // 현재 선택된 브랜드들
+  const activeBrands = lockedBrands.length ? lockedBrands : [brand];
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if(activeBrands.length === 1){
+    // 단일 가게 — 바로 앱 열기
+    const info = STORE_APP_LINKS[activeBrands[0]];
+    if(!info) return;
+    if(isIOS){
+      // iOS: 딥링크 시도 → 1.5초 후 앱스토어 폴백
+      window.location.href = info.ios;
+      setTimeout(()=>{ window.open(info.appstore, '_blank'); }, 1500);
+    } else if(isAndroid){
+      // Android: intent 방식
+      window.location.href = info.android;
+      setTimeout(()=>{ window.open(info.playstore, '_blank'); }, 1500);
+    }
+    toast('📱 '+info.name+' 앱 열기 시도 중...');
+  } else {
+    // 다중 가게 — 선택 팝업
+    const names = activeBrands.map(b=>STORE_APP_LINKS[b]?.name||b).join(' / ');
+    const idx = activeBrands.findIndex(b=>{
+      // 현재 보고 있는 브랜드 우선
+      return b === brand;
+    });
+    const target = activeBrands[idx >= 0 ? idx : 0];
+    const info = STORE_APP_LINKS[target];
+    if(!info) return;
+    if(isIOS){
+      window.location.href = info.ios;
+      setTimeout(()=>{ window.open(info.appstore, '_blank'); }, 1500);
+    } else if(isAndroid){
+      window.location.href = info.android;
+      setTimeout(()=>{ window.open(info.playstore, '_blank'); }, 1500);
+    }
+    toast('📱 '+info.name+' 앱 열기 시도 중...');
+  }
+}
+
+// (구) 배달의민족 — 미사용
 async function openBaemin(copyFn){
   await copyFn();
   const keyword = getStoreKeyword();
@@ -1487,13 +1569,11 @@ async function openCoupang(copyFn){
 
 // 개별 주문서 버튼
 $('btnKakaoMap').addEventListener('click', openKakaoMap);
-$('btnBaemin').addEventListener('click', ()=>openBaemin(copyReceipt));
-$('btnCoupang').addEventListener('click', ()=>openCoupang(copyReceipt));
+$('btnStoreApp').addEventListener('click', openStoreApp);
 
 // 통합주문서 버튼
 $('btnKakaoMapAll').addEventListener('click', openKakaoMap);
-$('btnBaeminAll').addEventListener('click', ()=>openBaemin(copyAllReceipt));
-$('btnCoupangAll').addEventListener('click', ()=>openCoupang(copyAllReceipt));
+$('btnStoreAppAll').addEventListener('click', openStoreApp);
 /* ═══════════════════════════════════════
    재주문
 ═══════════════════════════════════════ */
@@ -3087,6 +3167,8 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 실시간 WebSocket
   connectRealtime();
+  // 모바일 여부에 따라 배민/쿠팡 버튼 표시
+  applyMobileButtons();
 
   // 관리자 DB 메뉴 새로고침 버튼
   $('btnRefreshMenus').addEventListener('click', async () => {
