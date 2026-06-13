@@ -707,7 +707,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
     <div class="setup-card">
       <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
-      <p>주문 이름을 입력하면 취합용과 주문용 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
+      <p>주문 이름을 입력하면 취합용과 주문용 링크가 자동 생성됩니다. 단톡방에 공유하세요.</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
           style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
@@ -730,7 +730,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
   <div class="welcome-steps">
     <div class="welcome-step">
       <div class="welcome-step-num">1</div>
-      <div>주문설정에서 <b>팀 링크</b>를 생성하고<br>단톡방에 공유하세요</div>
+      <div>주문설정에서 <b>링크</b>를 생성하고<br>단톡방에 공유하세요</div>
     </div>
     <div class="welcome-step">
       <div class="welcome-step-num">2</div>
@@ -1159,11 +1159,11 @@ body.brand-compose .setup-header{background:#5C3A21;}
 <div class="modal-bg" id="modalLinks">
   <div class="modal-sheet">
     <div class="admin-header">
-      <h2>🔗 팀 링크</h2>
+      <h2>🔗 링크</h2>
       <button class="btn-admin-close" id="btnLinksClose">✕</button>
     </div>
     <div style="font-size:.78rem;color:var(--sub);margin-bottom:12px;">각 팀 단톡방에 링크를 공유하세요.</div>
-    <div id="linkModalList"><div class="empty">팀 링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div></div>
+    <div id="linkModalList"><div class="empty">링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div></div>
   </div>
 </div>
 
@@ -1815,7 +1815,7 @@ function updateSetupDoneBtn(){
     btn.textContent = '🚀 설정 완료 — 취합 시작';
   } else if(!hasTeam){
     btn.disabled = true;
-    btn.textContent = '팀 링크를 추가해주세요';
+    btn.textContent = '링크를 추가해주세요';
   } else {
     btn.disabled = true;
     btn.textContent = '주문설정에서 가게를 선택해주세요';
@@ -2250,7 +2250,7 @@ async function loadReorderDate(date){
   try{
     // 해당 날짜의 모든 주문 조회
     const data = await sbFetch(
-      `coffee_orders?session_id=like.${date}%&order=created_at.asc`
+      `coffee_orders?session_id=like.${date}*&order=created_at.asc`
     );
     reorderItems = data;
     renderReorderList();
@@ -3262,7 +3262,7 @@ async function openLinksModal(){
   const container = $('linkModalList');
   container.innerHTML = '';
   if(!list.length){
-    container.innerHTML = '<div class="empty">팀 링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div>';
+    container.innerHTML = '<div class="empty">링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div>';
     return;
   }
   list.forEach(team=>{
@@ -3843,7 +3843,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
     loadHeadcount(),
     loadStoreLock(),
     loadPriceLimit(),
-    fetchMenusFromDB(),
+    fetchMenusFromDB(pageMode === 'setup'), // 메인 페이지는 항상 최신 메뉴 로드
   ]);
 
   // 마감시간 카운트다운 시작
