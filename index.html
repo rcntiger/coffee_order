@@ -707,7 +707,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
     <div class="setup-card">
       <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
-      <p>주문 이름을 입력하면 취합용과 주문용 링크가 자동 생성됩니다. 단톡방에 공유하세요.</p>
+      <p>주문 이름 추가시 취합용과 주문용 링크가 자동 생성됩니다.</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
           style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
@@ -1880,7 +1880,7 @@ async function renderSetupTeamList(){
   const container = $('setupTeamList');
   container.innerHTML = '';
   if(!list.length){
-    container.innerHTML = '<div class="setup-empty-msg">팀을 추가해주세요</div>';
+    container.innerHTML = '<div class="setup-empty-msg"></div>';
     updateSetupDoneBtn(); return;
   }
   list.forEach(team=>{
