@@ -1891,51 +1891,52 @@ async function renderSetupTeamList(){
   updateSetupDoneBtn();
 }
 
-$('setupBtnAddTeam').addEventListener('click', async ()=>{
-  const name=$('setupInpTeam').value.trim();
-  if(!name){ toast('팀 이름을 입력해주세요'); return; }
-  const list=await loadTeamList();
-  if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
-  list.push(name); await saveTeamList(list);
-  $('setupInpTeam').value=''; await renderSetupTeamList();
-  toast('✅ '+name+' 링크 생성됨');
+// ── 설정 페이지 이벤트: 이벤트 위임으로 처리 (display:none 상태에서도 동작) ──
+document.addEventListener('click', async (e)=>{
+  // 팀 추가
+  if(e.target.id === 'setupBtnAddTeam' || e.target.closest('#setupBtnAddTeam')){
+    const name = $('setupInpTeam').value.trim();
+    if(!name){ toast('팀 이름을 입력해주세요'); return; }
+    const list = await loadTeamList();
+    if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
+    list.push(name); await saveTeamList(list);
+    $('setupInpTeam').value=''; await renderSetupTeamList();
+    toast('✅ '+name+' 링크 생성됨');
+  }
+  // 설정 열기
+  if(e.target.id === 'setupBtnSettings' || e.target.closest('#setupBtnSettings')){
+    if(!setupCfgId) await initSetupCfgId();
+    cfgId = setupCfgId;
+    console.log('[설정] cfgId:', cfgId);
+    openPinModal('verify','order');
+  }
 });
-$('setupInpTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') $('setupBtnAddTeam').click(); });
-$('setupBtnSettings').addEventListener('click', async ()=>{
-  // cfgId 확실히 설정 후 주문설정 열기
-  if(!setupCfgId) await initSetupCfgId();
-  cfgId = setupCfgId;
-  console.log('[설정] cfgId:', cfgId);
-  openPinModal('verify','order');
+document.addEventListener('keydown', e=>{
+  if(e.target.id === 'setupInpTeam' && e.key === 'Enter'){
+    document.getElementById('setupBtnAddTeam')?.click();
+  }
 });
 
-// 새로운 주문 버튼
-$('setupBtnNewOrder').addEventListener('click', async ()=>{
+// 새로운 주문 버튼 (이벤트 위임)
+document.addEventListener('click', async (e)=>{
+  if(!(e.target.id === 'setupBtnNewOrder' || e.target.closest('#setupBtnNewOrder'))) return;
   if(!confirm('현재 주문 데이터를 모두 초기화하고 새로운 주문을 시작할까요?\n(기존 데이터는 DB에 남아있습니다)')) return;
 
   const btn = $('setupBtnNewOrder');
   btn.disabled = true; btn.textContent = '초기화 중...';
 
   try{
-    // 설정 클리어
     await clearStoreLock();
     await clearDeadlineData();
     if(countdownTimer) clearInterval(countdownTimer);
     await clearHeadcount();
     maxPricePerOrder = 0; await savePriceLimit();
-
-    // 회차 증가
     sessionCount = (sessionCount||1) + 1;
     sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
     saveSession();
-
-    // 설정 요약 초기화
-    updateSetupSummary();
-    // 새 cfgId 생성 (새 주문 = 새 설정)
     setupCfgId = makeCfgId();
     cfgId = setupCfgId;
     localStorage.setItem('setup_cfg_id', setupCfgId);
-    // 팀 목록 초기화
     await saveTeamList([]);
     await renderSetupTeamList();
     updateSetupSummary();
@@ -1946,7 +1947,8 @@ $('setupBtnNewOrder').addEventListener('click', async ()=>{
     btn.disabled = false; btn.textContent = '🔄 새 주문';
   }
 });
-$('setupBtnDone').addEventListener('click',()=>{
+document.addEventListener('click',(e)=>{
+  if(!(e.target.id === 'setupBtnDone' || e.target.closest('#setupBtnDone'))) return;
   if(!lockedBrands.length){ toast('⚠️ 주문설정에서 가게를 선택해주세요'); return; }
   document.body.classList.remove('mode-setup');
   pageMode='admin';
