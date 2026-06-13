@@ -1927,7 +1927,7 @@ document.addEventListener('click', async (e)=>{
   // 팀 추가
   if(e.target.id === 'setupBtnAddTeam' || e.target.closest('#setupBtnAddTeam')){
     const name = $('setupInpTeam').value.trim();
-    if(!name){ toast('팀 이름을 입력해주세요'); return; }
+    if(!name){ toast('주문 이름을 추가해주세요'); return; }
     // 가게 설정 필수 확인
     if(!lockedBrands.length){
       toast('⚠️ 먼저 주문설정에서 가게를 선택해주세요');
