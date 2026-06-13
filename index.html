@@ -707,7 +707,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
     <div class="setup-card">
       <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
-      <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
+      <p>주문 이름을 입력하면 취합용과 주문용 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
           style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
@@ -1868,13 +1868,13 @@ async function renderSetupTeamList(){
         '<button class="sdel" style="border:none;background:#FBE7E5;color:var(--danger);font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">삭제</button>'+
       '</div>'+
       '<div class="setup-link-row">'+
-        '<span class="setup-link-badge" style="background:#EEF2FF;color:#3730A3;">관리자</span>'+
+        '<span class="setup-link-badge" style="background:#EEF2FF;color:#3730A3;">취합용</span>'+
         '<span class="setup-link-url su-a"></span>'+
         '<button class="setup-copy-btn sc-a" style="background:var(--primary);color:#fff;">복사</button>'+
         '<button class="setup-copy-btn so-a" style="background:#fff;border:1.5px solid var(--primary);color:var(--primary);">열기</button>'+
       '</div>'+
       '<div class="setup-link-row">'+
-        '<span class="setup-link-badge" style="background:#F0FDF4;color:#16A34A;">직원</span>'+
+        '<span class="setup-link-badge" style="background:#F0FDF4;color:#16A34A;">주문용</span>'+
         '<span class="setup-link-url su-o"></span>'+
         '<button class="setup-copy-btn sc-o" style="background:#16A34A;color:#fff;">복사</button>'+
         '<button class="setup-copy-btn so-o" style="background:#fff;border:1.5px solid #16A34A;color:#16A34A;">열기</button>'+
@@ -1882,8 +1882,8 @@ async function renderSetupTeamList(){
     card.querySelector('.su-a').textContent = adminUrl;
     card.querySelector('.su-o').textContent = orderUrl;
     const cp=(t,l)=>{ navigator.clipboard.writeText(t).then(()=>toast('📋 '+l+' 복사됨')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('📋 '+l+' 복사됨'); }); };
-    card.querySelector('.sc-a').addEventListener('click',()=>cp(adminUrl,team+' 관리자'));
-    card.querySelector('.sc-o').addEventListener('click',()=>cp(orderUrl,team+' 직원'));
+    card.querySelector('.sc-a').addEventListener('click',()=>cp(adminUrl,team+' 취합용'));
+    card.querySelector('.sc-o').addEventListener('click',()=>cp(orderUrl,team+' 주문용'));
     card.querySelector('.so-a').addEventListener('click',()=>window.open(adminUrl,'_blank'));
     card.querySelector('.so-o').addEventListener('click',()=>window.open(orderUrl,'_blank'));
     card.querySelector('.sdel').addEventListener('click', async ()=>{
@@ -3275,13 +3275,13 @@ async function openLinksModal(){
     div.innerHTML =
       '<div style="font-size:.92rem;font-weight:800;margin-bottom:8px;">'+team+'</div>'+
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'+
-        '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">관리자</span>'+
+        '<span style="font-size:.7rem;font-weight:700;background:#EEF2FF;color:#3730A3;padding:2px 7px;border-radius:5px;flex:none;">취합용</span>'+
         '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="au"></div>'+
         '<button class="bca" style="border:none;background:var(--primary);color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
         '<button class="boa" style="border:1.5px solid var(--primary);background:#fff;color:var(--primary);font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:6px;">'+
-        '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">직원</span>'+
+        '<span style="font-size:.7rem;font-weight:700;background:#F0FDF4;color:#16A34A;padding:2px 7px;border-radius:5px;flex:none;">주문용</span>'+
         '<div style="font-size:.68rem;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="ou"></div>'+
         '<button class="bco" style="border:none;background:#16A34A;color:#fff;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">복사</button>'+
         '<button class="boo" style="border:1.5px solid #16A34A;background:#fff;color:#16A34A;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;flex:none;">열기</button>'+
