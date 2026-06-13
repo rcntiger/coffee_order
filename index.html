@@ -708,7 +708,6 @@ body.mode-order .notice{ }
     <!-- 현재 설정 요약 -->
     <div id="orderSettingSummary" style="background:#F8F7F4;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.8;">
       <div style="font-weight:800;margin-bottom:4px;">현재 설정</div>
-      <div id="summaryTeam">🔗 팀: <span style="color:var(--sub);">전체 공용</span></div>
       <div id="summaryStore">🏪 가게: <span style="color:var(--sub);">설정 없음</span></div>
       <div id="summaryDeadline">⏰ 마감: <span style="color:var(--sub);">설정 없음</span></div>
       <div id="summaryHeadcount">📋 잔수: <span style="color:var(--sub);">설정 없음</span></div>
@@ -1492,22 +1491,39 @@ function applyOrderMode(){
 /* ═══════════════════════════════════════
    팀별 링크 생성
 ═══════════════════════════════════════ */
-const LS_TEAMS_KEY = 'coffeeTeamList_v1';
-
-function loadTeamList(){
-  try{ return JSON.parse(localStorage.getItem(LS_TEAMS_KEY)||'[]'); }
-  catch(e){ return []; }
+async function loadTeamList(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=team_list`
+    );
+    const raw = rows[0]?.team_list || '[]';
+    return JSON.parse(raw);
+  }catch(e){
+    console.warn('[팀목록] DB 로드 실패:', e.message);
+    return [];
+  }
 }
-function saveTeamList(list){
-  localStorage.setItem(LS_TEAMS_KEY, JSON.stringify(list));
+async function saveTeamList(list){
+  try{
+    await sbFetch('session_settings', {
+      method: 'POST',
+      headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
+      body: JSON.stringify({
+        session_id: '__global__',
+        brand: '__global__',
+        team_list: JSON.stringify(list),
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[팀목록] DB 저장 실패:', e.message); }
 }
 
 function getBaseURL(){
   return window.location.origin + window.location.pathname;
 }
 
-function renderTeamLinkList(){
-  const list = loadTeamList();
+async function renderTeamLinkList(){
+  const list = await loadTeamList();
   const container = $('teamLinkList');
   container.innerHTML = '';
   if(!list.length){
@@ -1547,24 +1563,25 @@ function renderTeamLinkList(){
     }
     div.querySelector('.btn-copy-admin').addEventListener('click',()=>copyToClip(adminUrl, team+' 관리자 링크'));
     div.querySelector('.btn-copy-order').addEventListener('click',()=>copyToClip(orderUrl, team+' 직원 링크'));
-    div.querySelector('.btn-del-team').addEventListener('click',()=>{
-      const updated = loadTeamList().filter(t=>t!==team);
-      saveTeamList(updated);
-      renderTeamLinkList();
+    div.querySelector('.btn-del-team').addEventListener('click', async ()=>{
+      const list = await loadTeamList();
+      const updated = list.filter(t=>t!==team);
+      await saveTeamList(updated);
+      await renderTeamLinkList();
     });
     container.appendChild(div);
   });
 }
 
-$('btnAddTeam').addEventListener('click',()=>{
+$('btnAddTeam').addEventListener('click', async ()=>{
   const name = $('inpTeamName').value.trim();
   if(!name){ toast('팀 이름을 입력해주세요'); return; }
-  const list = loadTeamList();
+  const list = await loadTeamList();
   if(list.includes(name)){ toast('이미 있는 팀 이름입니다'); return; }
   list.push(name);
-  saveTeamList(list);
+  await saveTeamList(list);
   $('inpTeamName').value = '';
-  renderTeamLinkList();
+  await renderTeamLinkList();
   toast('✅ '+name+' 링크 생성됨');
 });
 
@@ -2292,7 +2309,7 @@ function updateOrderSummary(){
 /* ── 주문설정 모달 ── */
 function openOrderModal(){
   initTempSettings();
-  renderTeamLinkList();
+  renderTeamLinkList(); // async — 비동기로 로드
   switchOrderTab('teamlink');
   $('modalOrder').classList.add('show');
 }
@@ -2854,8 +2871,10 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
     maxPricePerOrder = parseInt($('inpPriceLimit').value||'0', 10);
     await savePriceLimit();
 
-    closeOrderModal();
-    toast('✅ 주문설정이 저장되었습니다');
+    // 링크 탭으로 이동해서 공유 링크 바로 확인
+    switchOrderTab('teamlink');
+    await renderTeamLinkList();
+    toast('✅ 주문설정 저장 완료 — 링크를 공유하세요');
   }catch(e){
     toast('저장 실패: '+e.message);
   }finally{
