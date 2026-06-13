@@ -142,6 +142,25 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 .toggle input:checked+.knob::after{left:23px;}
 .custom-fields{display:none;margin-top:10px;}
 .custom-fields.show{display:block;}
+/* ── 수량 선택 ── */
+.qty-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;margin-bottom:4px;}
+.qty-row .qty-label{font-size:.88rem;font-weight:600;}
+.qty-ctrl{display:flex;align-items:center;gap:0;}
+.qty-btn{
+  width:34px;height:34px;border:1.5px solid var(--line);background:#fff;
+  font-size:1.2rem;font-weight:700;cursor:pointer;font-family:inherit;
+  color:var(--text);transition:background .1s;
+}
+.qty-btn:first-child{border-radius:8px 0 0 8px;}
+.qty-btn:last-child{border-radius:0 8px 8px 0;}
+.qty-btn:active{background:#F0EDE8;}
+.qty-btn:disabled{opacity:.35;cursor:not-allowed;}
+.qty-num{
+  width:38px;height:34px;border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:800;font-variant-numeric:tabular-nums;
+  background:#FAFAF8;
+}
 .btn-add{
   width:100%;margin-top:16px;padding:14px 0;border:none;border-radius:12px;
   background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;
@@ -672,19 +691,9 @@ body.brand-compose .setup-header{background:#5C3A21;}
   <div class="setup-header">
     <div class="sh-icon">☕</div>
     <h1>주문 취합 설정</h1>
-    <p>링크를 생성하고<br>주문설정을 완료하세요</p>
+    <p>주문설정 후 링크를 생성하고<br>단톡방에 공유하세요</p>
   </div>
   <div class="setup-body">
-    <div class="setup-card">
-      <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
-      <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
-          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
-        <button id="setupBtnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
-      </div>
-      <div id="setupTeamList"><div class="setup-empty-msg">팀을 추가해주세요</div></div>
-    </div>
     <div class="setup-card">
       <h2>⚙️ 주문설정 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수(가게)</span></h2>
       <p>가게 선택은 필수입니다. 마감시간, 잔수, 가격은 선택사항입니다.</p>
@@ -695,6 +704,16 @@ body.brand-compose .setup-header{background:#5C3A21;}
         <div class="setup-summary-row"><span class="setup-summary-label">💰 가격</span><span class="setup-summary-val" id="setupSumPrice" style="color:var(--sub);">제한없음</span></div>
       </div>
       <button id="setupBtnSettings" style="width:100%;margin-top:12px;padding:11px 0;border:none;border-radius:10px;background:#EEF2FF;color:#3730A3;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">⚙️ 설정 열기</button>
+    </div>
+    <div class="setup-card">
+      <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
+      <p>팀 이름을 입력하면 관리자용(취합)과 직원용(주문) 링크가 자동 생성됩니다. 각 단톡방에 공유하세요.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
+          style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
+        <button id="setupBtnAddTeam" style="flex:none;padding:10px 14px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">추가</button>
+      </div>
+      <div id="setupTeamList"><div class="setup-empty-msg">팀을 추가해주세요</div></div>
     </div>
   </div>
   <div class="setup-bottom">
@@ -819,6 +838,14 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
     <label for="inpMemo">요청사항 (선택)</label>
     <input type="text" id="inpMemo" placeholder="예: 연하게, 얼음 적게" maxlength="20" autocomplete="off">
+    <div class="qty-row">
+      <span class="qty-label">수량</span>
+      <div class="qty-ctrl">
+        <button class="qty-btn" id="btnQtyMinus" type="button">−</button>
+        <div class="qty-num" id="qtyNum">1</div>
+        <button class="qty-btn" id="btnQtyPlus" type="button">+</button>
+      </div>
+    </div>
     <button class="btn-add" id="btnAdd">주문 담기</button>
   </section>
 
@@ -1476,6 +1503,7 @@ let orders=[], allOrders=[], sessionId='', sessionCount=1, isAdding=false;
 let teamName = ''; // URL ?team=XXX 에서 읽어온 팀 이름
 let orderMode = 'admin'; // 'admin' | 'order' (직원용)
 let pageMode = 'setup';  // 'setup' | 'admin' | 'order'
+let cfgId = '';          // 설정 ID (?cfg=xxx)
 let lastOrderName = ''; // 직원이 마지막으로 입력한 이름
 let maxPricePerOrder = 0; // 1인당 주문가격 한도 (0=제한없음)
 let adminBrand='paik', delBrand='paik';
@@ -1753,6 +1781,26 @@ function renderMyOrders(){
 /* ═══════════════════════════════════════
    시작 화면
 ═══════════════════════════════════════ */
+
+/* ── 설정 ID 생성 ── */
+function makeCfgId(){
+  return todayBase() + '_' + Math.random().toString(36).slice(2,7);
+}
+
+// 메인 페이지용 cfgId (설정할 때마다 새로 생성)
+let setupCfgId = '';
+
+async function initSetupCfgId(){
+  // localStorage에 저장된 cfgId 재사용 또는 새로 생성
+  const stored = localStorage.getItem('setup_cfg_id');
+  if(stored && stored.startsWith(todayBase())){
+    setupCfgId = stored;
+  } else {
+    setupCfgId = makeCfgId();
+    localStorage.setItem('setup_cfg_id', setupCfgId);
+  }
+  cfgId = setupCfgId;
+}
 /* ── 설정 페이지 JS ── */
 function updateSetupDoneBtn(){
   const btn = $('setupBtnDone');
@@ -1805,8 +1853,9 @@ async function renderSetupTeamList(){
     updateSetupDoneBtn(); return;
   }
   list.forEach(team=>{
-    const adminUrl = getBaseURL()+'?team='+encodeURIComponent(team);
-    const orderUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&mode=order';
+    const cfg = setupCfgId || cfgId || 'setup';
+    const adminUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&cfg='+cfg;
+    const orderUrl = getBaseURL()+'?team='+encodeURIComponent(team)+'&cfg='+cfg+'&mode=order';
     const card = document.createElement('div');
     card.className = 'setup-team-card';
     card.innerHTML =
@@ -1852,7 +1901,7 @@ $('setupBtnAddTeam').addEventListener('click', async ()=>{
   toast('✅ '+name+' 링크 생성됨');
 });
 $('setupInpTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') $('setupBtnAddTeam').click(); });
-$('setupBtnSettings').addEventListener('click',()=>openPinModal('verify','order'));
+$('setupBtnSettings').addEventListener('click',()=>{ cfgId=setupCfgId; openPinModal('verify','order'); });
 
 // 새로운 주문 버튼
 $('setupBtnNewOrder').addEventListener('click', async ()=>{
@@ -1875,6 +1924,14 @@ $('setupBtnNewOrder').addEventListener('click', async ()=>{
     saveSession();
 
     // 설정 요약 초기화
+    updateSetupSummary();
+    // 새 cfgId 생성 (새 주문 = 새 설정)
+    setupCfgId = makeCfgId();
+    cfgId = setupCfgId;
+    localStorage.setItem('setup_cfg_id', setupCfgId);
+    // 팀 목록 초기화
+    await saveTeamList([]);
+    await renderSetupTeamList();
     updateSetupSummary();
     toast('🔄 새로운 주문이 시작됩니다 ('+sessionCount+'회차)');
   }catch(e){
@@ -2468,6 +2525,19 @@ $('btnEditSave').addEventListener('click', async ()=>{
     btn.disabled=false; btn.textContent='✅ 수정 저장';
   }
 });
+
+/* ── 수량 선택 ── */
+let orderQty = 1;
+
+function setQty(n){
+  orderQty = Math.min(5, Math.max(1, n));
+  $('qtyNum').textContent = orderQty;
+  $('btnQtyMinus').disabled = orderQty <= 1;
+  $('btnQtyPlus').disabled = orderQty >= 5;
+}
+
+$('btnQtyMinus').addEventListener('click',()=> setQty(orderQty - 1));
+$('btnQtyPlus').addEventListener('click',()=> setQty(orderQty + 1));
 /* ═══════════════════════════════════════
    주문 추가
 ═══════════════════════════════════════ */
@@ -3175,8 +3245,10 @@ async function openLinksModal(){
     return;
   }
   list.forEach(team=>{
-    const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team);
-    const orderUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + '&mode=order';
+    const cfg = setupCfgId || cfgId || '';
+    const cfgParam = cfg ? '&cfg='+cfg : '';
+    const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + cfgParam;
+    const orderUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + cfgParam + '&mode=order';
     const div = document.createElement('div');
     div.style.cssText = 'background:#F8F7F4;border-radius:10px;padding:10px 12px;margin-bottom:8px;';
     div.innerHTML =
@@ -3220,7 +3292,7 @@ $('modalOrder').addEventListener('click',e=>{ if(e.target===e.currentTarget) clo
 async function loadPriceLimit(){
   try{
     const rows = await sbFetch(
-      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=price_limit`
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=price_limit`
     );
     maxPricePerOrder = rows[0]?.price_limit || 0;
   }catch(e){
@@ -3234,7 +3306,7 @@ async function savePriceLimit(){
       method: 'POST',
       headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
-        session_id: '__global__',
+        session_id: cfgId||'__global__',
         brand: '__global__',
         price_limit: maxPricePerOrder,
         updated_at: new Date().toISOString()
@@ -3358,7 +3430,7 @@ let totalHeadcount = 0; // 0 = 미설정
 async function loadHeadcount(){
   try{
     const data = await sbFetch(
-      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&select=headcount`
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=headcount`
     );
     totalHeadcount = data[0]?.headcount || 0;
   }catch(e){
@@ -3372,7 +3444,7 @@ async function saveHeadcount(){
       method: 'POST',
       headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
-        session_id: sessionId, brand,
+        session_id: cfgId||'__global__', brand: '__global__',
         headcount: totalHeadcount,
         updated_at: new Date().toISOString()
       })
@@ -3389,7 +3461,7 @@ async function clearHeadcount(){
   totalHeadcount = 0;
   try{
     await sbFetch(
-      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__`,
       { method: 'PATCH',
         headers: {'Prefer': 'return=representation'},
         body: JSON.stringify({headcount: 0}) }
@@ -3469,7 +3541,7 @@ const STORE_META = {
 async function loadStoreLock(){
   try{
     const rows = await sbFetch(
-      `session_settings?session_id=eq.__global__&brand=eq.__global__&select=locked_brand`
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=locked_brand`
     );
     const raw = rows[0]?.locked_brand || '';
     lockedBrands = raw ? raw.split(',').filter(b=>BRANDS[b]) : [];
@@ -3486,7 +3558,7 @@ async function saveStoreLock(){
       method: 'POST',
       headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
-        session_id: '__global__',
+        session_id: cfgId||'__global__',
         brand: '__global__',
         locked_brand: lockedBrands.join(','),
         updated_at: new Date().toISOString()
@@ -3578,7 +3650,7 @@ let countdownTimer = null;
 async function loadDeadline(){
   try{
     const data = await sbFetch(
-      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&select=deadline_ts,deadline_start_ts`
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=deadline_ts,deadline_start_ts`
     );
     deadlineTs = data[0]?.deadline_ts || 0;
     deadlineStartTs = data[0]?.deadline_start_ts || 0;
@@ -3593,7 +3665,7 @@ async function saveDeadline(){
       method: 'POST',
       headers: {'Prefer': 'resolution=merge-duplicates,return=representation'},
       body: JSON.stringify({
-        session_id: sessionId, brand,
+        session_id: cfgId||'__global__', brand: '__global__',
         deadline_ts: deadlineTs,
         deadline_start_ts: deadlineStartTs,
         updated_at: new Date().toISOString()
@@ -3605,7 +3677,7 @@ async function clearDeadlineData(){
   deadlineTs=0; deadlineStartTs=0;
   try{
     await sbFetch(
-      `session_settings?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}`,
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__`,
       { method: 'PATCH',
         headers: {'Prefer': 'return=representation'},
         body: JSON.stringify({deadline_ts: 0, deadline_start_ts: 0}) }
@@ -3760,6 +3832,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 첫 접속 시 시작 화면 표시
   if(pageMode === 'setup'){
+    await initSetupCfgId();
     await renderSetupTeamList();
     updateSetupSummary();
   }
