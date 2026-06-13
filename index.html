@@ -1606,12 +1606,11 @@ function connectRealtime(){
       if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
         const tbl = msg.payload?.table || msg.topic || '';
         if(tbl.includes('session_settings')){
-          // 설정 전체 재로드
           Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]).then(()=>{
             if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
             renderHeadcountBar();
-            renderMenuSelect(); // 가격 한도 반영
-            applyBrandTheme();  // 가게 설정 반영
+            renderMenuSelect();
+            applyBrandTheme();
           });
         } else {
           fetchOrders();
@@ -1622,6 +1621,34 @@ function connectRealtime(){
   ws.onerror=()=>setSyncStatus('err','연결 오류');
   ws.onclose=()=>{ setSyncStatus('err','재연결 중...'); setTimeout(connectRealtime,3000); };
   setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); },30000);
+}
+
+/* ── 폴링: 3초마다 주문 자동 갱신 ── */
+let lastOrderCount = 0;
+let lastOrderHash = '';
+
+function startPolling(){
+  if(pageMode === 'setup') return; // 설정 페이지는 폴링 불필요
+  setInterval(async ()=>{
+    try{
+      const data = await sbFetch(
+        `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&brand=eq.${brand}&order=created_at.asc`
+      );
+      // 변경 있을 때만 갱신
+      const hash = data.map(o=>o.id+o.price).join(',');
+      if(hash !== lastOrderHash){
+        lastOrderHash = hash;
+        orders = data;
+        const allData = await sbFetch(
+          `coffee_orders?session_id=eq.${encodeURIComponent(sessionId)}&order=created_at.asc`
+        );
+        allOrders = allData;
+        renderOrders();
+        renderMyOrders();
+        renderHeadcountBar();
+      }
+    }catch(e){}
+  }, 3000);
 }
 
 /* ═══════════════════════════════════════
@@ -1963,9 +1990,14 @@ document.addEventListener('click', async (e)=>{
 document.addEventListener('click',(e)=>{
   if(!(e.target.id === 'setupBtnDone' || e.target.closest('#setupBtnDone'))) return;
   if(!lockedBrands.length){ toast('⚠️ 주문설정에서 가게를 선택해주세요'); return; }
-  document.body.classList.remove('mode-setup');
-  pageMode='admin';
-  toast('✅ 설정 완료! 주문 취합을 시작합니다');
+  // 첫 번째 팀의 취합용 링크로 이동
+  (async()=>{
+    const list = await loadTeamList();
+    if(!list.length){ toast('⚠️ 링크를 먼저 생성해주세요'); return; }
+    const cfg = setupCfgId || cfgId || '';
+    const url = getBaseURL() + '?team=' + encodeURIComponent(list[0]) + (cfg ? '&cfg='+cfg : '');
+    window.location.href = url;
+  })();
 });
 /* ═══════════════════════════════════════
    역할 모드 적용 (admin / order)
@@ -3873,6 +3905,8 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 실시간 WebSocket
   connectRealtime();
+  // 폴링 (WebSocket 백업)
+  startPolling();
   // 모바일 여부에 따라 배민/쿠팡 버튼 표시
   applyMobileButtons();
   // 역할 모드 적용
