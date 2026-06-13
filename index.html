@@ -708,7 +708,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
     <div class="setup-card">
       <h2>🔗 링크 생성 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수</span></h2>
-      <p>주문 이름 추가시 취합용과 주문용 링크가 자동 생성됩니다.</p>
+      <p>동일 주문설정으로 여러 링크 생성 가능 합니다.</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="text" id="setupInpTeam" placeholder="주문 이름 (예: 1팀)" maxlength="10"
           style="flex:1;padding:10px 12px;font-size:.95rem;font-family:inherit;border:1.5px solid var(--line);border-radius:10px;outline:none;background:#FAFAF8;">
@@ -1159,7 +1159,6 @@ body.brand-compose .setup-header{background:#5C3A21;}
       <h2>🔗 링크</h2>
       <button class="btn-admin-close" id="btnLinksClose">✕</button>
     </div>
-    <div style="font-size:.78rem;color:var(--sub);margin-bottom:12px;">각 팀 단톡방에 링크를 공유하세요.</div>
     <div id="linkModalList"><div class="empty">링크가 없습니다.<br>주문설정 → 링크 탭에서 추가하세요.</div></div>
   </div>
 </div>
@@ -1595,6 +1594,7 @@ function connectRealtime(){
   const ws=new WebSocket(SUPA_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SUPA_KEY+'&vsn=1.0.0');
   ws.onopen=()=>{
     ws.send(JSON.stringify({topic:'realtime:public:coffee_orders',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'1'}));
+    ws.send(JSON.stringify({topic:'realtime:public:session_settings',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'2'}));
     setSyncStatus('ok','DB 연결됨');
   };
   ws.onmessage=e=>{
@@ -1832,6 +1832,7 @@ async function initSetupCfgId(){
 /* ── 설정 페이지 JS ── */
 function updateSetupDoneBtn(){
   const btn = $('setupBtnDone');
+  if(!btn) return; // 버튼 없으면 종료
   const hasTeam = document.querySelectorAll('.setup-team-card').length > 0;
   const hasStore = lockedBrands.length > 0;
   if(hasTeam && hasStore){
@@ -1960,7 +1961,7 @@ document.addEventListener('click', async (e)=>{
   if(!confirm('현재 주문 데이터를 모두 초기화하고 새로운 주문을 시작할까요?\n(기존 데이터는 DB에 남아있습니다)')) return;
 
   const btn = $('setupBtnNewOrder');
-  btn.disabled = true; btn.textContent = '초기화 중...';
+  btn.textContent = '초기화 중...';
 
   try{
     await clearStoreLock();
@@ -1981,7 +1982,7 @@ document.addEventListener('click', async (e)=>{
   }catch(e){
     toast('초기화 실패: '+e.message);
   }finally{
-    btn.disabled = false; btn.textContent = '🔄 새 주문';
+    btn.textContent = '🔄 새 주문';
   }
 });
 document.addEventListener('click',(e)=>{
@@ -3302,6 +3303,8 @@ async function openLinksModal(){
     return;
   }
   list.forEach(team=>{
+    // 취합/주문 페이지에서는 현재 팀 링크만 표시
+    if(teamName && team !== teamName) return;
     const cfg = setupCfgId || cfgId || '';
     const cfgParam = cfg ? '&cfg='+cfg : '';
     const adminUrl = getBaseURL() + '?team=' + encodeURIComponent(team) + cfgParam;
