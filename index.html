@@ -13,6 +13,10 @@
     document.documentElement.classList.add('mode-setup-pre');
   } else if(mode === 'order'){
     document.documentElement.classList.add('mode-order-pre');
+    // DOMContentLoaded 전에 body에도 적용
+    document.addEventListener('DOMContentLoaded', function(){
+      document.body.classList.add('mode-order');
+    });
   }
 })();
 </script>
@@ -406,6 +410,11 @@ html.mode-order-pre .order-hide{ display:none !important; }
 html.mode-order-pre .my-orders-wrap{ display:block !important; }
 html.mode-order-pre .headcount-bar{ display:none !important; }
 html.mode-order-pre .bottom-bar{ display:none !important; }
+html.mode-order-pre #btnOrderOpen{ display:none !important; }
+html.mode-order-pre #btnMenuOpen{ display:none !important; }
+html.mode-order-pre #btnShowLinks{ display:none !important; }
+html.mode-order-pre #btnNewSession{ display:none !important; }
+html.mode-order-pre .deadline-bar{ display:block; }
 body.mode-order .order-hide{ display:none !important; }
 
 body.mode-order .notice{ }
