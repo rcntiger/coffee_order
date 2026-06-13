@@ -357,6 +357,11 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 .receipt-store-notice{
   font-size:.72rem;color:var(--sub);text-align:center;margin-top:8px;line-height:1.5;
 }
+/* ── 직원 모드 ── */
+body.mode-order .order-hide{ display:none !important; }
+body.mode-order .card:has(.order-hide-parent){ display:none !important; }
+
+body.mode-order .notice{ }
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -528,14 +533,14 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 <header>
   <div class="header-row">
     <h1>☕ 주문 취합 <span id="teamBadge" style="font-size:.75rem;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:99px;vertical-align:2px;display:none;"></span></h1>
-    <div style="display:flex;gap:6px;"><button class="btn-admin-open" id="btnOrderOpen">📋 주문설정</button><button class="btn-admin-open" id="btnMenuOpen">🍽 메뉴수정</button></div>
+    <div style="display:flex;gap:6px;"><button class="btn-admin-open" id="btnOrderOpen" class="order-hide">📋 주문설정</button><button class="btn-admin-open" id="btnMenuOpen" class="order-hide">🍽 메뉴수정</button></div>
   </div>
   <div class="header-row" style="margin-top:6px;align-items:center;">
     <div>
       <div class="date" id="todayDate"></div>
       <div style="font-size:.72rem;opacity:.8;margin-top:2px;display:flex;align-items:center;gap:6px;">
         <span id="sessionLabel" style="font-weight:700;opacity:.9;">-</span>
-        <button id="btnNewSession" style="border:none;background:rgba(255,255,255,.2);color:#fff;font-size:.68rem;font-weight:700;padding:3px 7px;border-radius:6px;cursor:pointer;font-family:inherit;">➕ 새 주문</button>
+        <button id="btnNewSession" class="order-hide" style="border:none;background:rgba(255,255,255,.2);color:#fff;font-size:.68rem;font-weight:700;padding:3px 7px;border-radius:6px;cursor:pointer;font-family:inherit;">➕ 새 주문</button>
       </div>
     </div>
     <div class="sync-status">
@@ -618,7 +623,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   </section>
 
   <section class="card">
-    <h2>주문 현황 <span class="count-badge" id="countBadge">0명</span></h2>
+    <h2 class="order-hide-parent">주문 현황 <span class="count-badge" id="countBadge">0명</span></h2>
     <div id="orderList"><div class="empty">아직 주문이 없습니다.</div></div>
     <div class="list-actions">
       <button class="btn-reset" id="btnReset">전체 초기화</button>
@@ -633,7 +638,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <div class="cups" id="barCups">0잔</div>
     <div class="total" id="barTotal">0원</div>
   </div>
-  <div style="display:flex;gap:6px;"><button class="btn-receipt" style="background:rgba(255,255,255,.2);color:#fff;" id="btnOpenReorder">🔁 재주문</button><button class="btn-receipt" id="btnOpenReceipt">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" style="display:none;">🗂 통합주문서</button></div>
+  <div style="display:flex;gap:6px;"><button class="btn-receipt" style="background:rgba(255,255,255,.2);color:#fff;" id="btnOpenReorder" class="order-hide">🔁 재주문</button><button class="btn-receipt" id="btnOpenReceipt" class="order-hide">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" class="order-hide" style="display:none;">🗂 통합주문서</button></div>
 </div>
 
 <!-- 영수증 모달 -->
@@ -1285,6 +1290,8 @@ function loadTeamFromURL(){
   const m = params.get('mode');
   if(m === 'order') orderMode = 'order';
   else orderMode = 'admin';
+  // 즉시 body 클래스 적용 (렌더링 전)
+  if(orderMode === 'order') document.body.classList.add('mode-order');
 }
 
 function getTeamKey(){
@@ -1475,43 +1482,9 @@ function renderOrders(){
    역할 모드 적용 (admin / order)
 ═══════════════════════════════════════ */
 function applyOrderMode(){
-  if(orderMode !== 'order') return; // admin은 그대로
-
-  // 직원 모드: 주문 추가 폼만 보이고 나머지 숨김
-
-  // 관리자 버튼 숨김
-  const adminBtns = ['btnOrderOpen','btnMenuOpen'];
-  adminBtns.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-
-  // 헤더에 직원 모드 뱃지
-  const badge = document.getElementById('teamBadge');
-  if(badge){
-    badge.style.background = 'rgba(255,255,255,.25)';
-  }
-
-  // 주문 현황 카드 숨김 (전체 초기화 포함)
-  document.querySelectorAll('.card').forEach(card=>{
-    const h2 = card.querySelector('h2');
-    if(h2 && h2.textContent.includes('주문 현황')){
-      card.style.display = 'none';
-    }
-  });
-
-  // 하단 바 버튼 숨김 (주문서/재주문/통합주문서)
-  ['btnOpenReceipt','btnOpenAllReceipt','btnOpenReorder'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.style.display='none';
-  });
-
-  // 새 주문 버튼 숨김
-  const newSessionBtn = document.getElementById('btnNewSession');
-  if(newSessionBtn) newSessionBtn.style.display='none';
-
-  // 하단 바 배경 단순화
-  const bottomBar = document.querySelector('.bottom-bar');
-  if(bottomBar){
-    bottomBar.style.justifyContent = 'center';
-  }
-
+  if(orderMode !== 'order') return;
+  // CSS 클래스로 즉시 적용 — 타이밍 문제 없음
+  document.body.classList.add('mode-order');
   // 안내 문구 변경
   const notice = document.querySelector('.notice');
   if(notice) notice.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
