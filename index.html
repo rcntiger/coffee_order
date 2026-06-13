@@ -3839,6 +3839,12 @@ function tickCountdown(){
     $('deadlineEndTime').textContent = '';
     $('deadlineProgress').style.width = '0%';
     clearInterval(countdownTimer);
+    // 주문 담기 버튼 비활성화
+    const addBtn = $('btnAdd');
+    if(addBtn){
+      addBtn.disabled = true;
+      addBtn.textContent = '🔴 주문 마감';
+    }
     return;
   }
 
@@ -3950,7 +3956,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
 
   // 마감시간 카운트다운 시작
   if(deadlineTs && deadlineTs > Date.now()) startCountdown();
-  else if(deadlineTs) tickCountdown();
+  else if(deadlineTs){
+    tickCountdown(); // 마감됨 표시 + 버튼 비활성화
+  }
 
   // 인원 현황 바
   renderHeadcountBar();
