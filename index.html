@@ -1620,33 +1620,48 @@ async function deleteSession(){ return sbFetch(`coffee_orders?session_id=eq.${en
 
 /* ── Realtime ── */
 function connectRealtime(){
+  // ── 주문 데이터: WebSocket Realtime ──
   const ws=new WebSocket(SUPA_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SUPA_KEY+'&vsn=1.0.0');
   ws.onopen=()=>{
     ws.send(JSON.stringify({topic:'realtime:public:coffee_orders',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'1'}));
-    ws.send(JSON.stringify({topic:'realtime:public:session_settings',event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:'2'}));
     setSyncStatus('ok','DB 연결됨');
   };
   ws.onmessage=e=>{
     try{
       const msg=JSON.parse(e.data);
       if(msg.event==='postgres_changes'||(msg.payload&&msg.payload.type&&['INSERT','DELETE','UPDATE'].includes(msg.payload.type))){
-        const tbl = msg.payload?.table || msg.topic || '';
-        if(tbl.includes('session_settings')){
-          Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]).then(()=>{
-            if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
-            renderHeadcountBar();
-            renderMenuSelect();
-            applyBrandTheme();
-          });
-        } else {
-          fetchOrders();
-        }
+        fetchOrders();
       }
     }catch(err){}
   };
   ws.onerror=()=>setSyncStatus('err','연결 오류');
   ws.onclose=()=>{ setSyncStatus('err','재연결 중...'); setTimeout(connectRealtime,3000); };
   setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); },30000);
+
+  // ── 주문설정: 3초 폴링 ──
+  let lastSettingsHash = '';
+  async function pollSettings(){
+    try{
+      const rows = await sbFetch(
+        `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=locked_brand,deadline_ts,headcount,price_limit&order=updated_at.desc&limit=1`
+      );
+      const hash = JSON.stringify(rows[0]||{});
+      if(hash !== lastSettingsHash){
+        lastSettingsHash = hash;
+        await Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]);
+        if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
+        renderHeadcountBar();
+        renderMenuSelect();
+        applyBrandTheme();
+        console.log('[설정] 변경 감지 → 적용됨');
+      }
+    }catch(e){}
+  }
+  // 3초마다 설정 폴링 (취합/주문 페이지에서만)
+  if(pageMode !== 'setup'){
+    setInterval(pollSettings, 3000);
+    pollSettings(); // 즉시 1회 실행
+  }
 }
 
 /* ── 폴링: 3초마다 주문 자동 갱신 ── */
