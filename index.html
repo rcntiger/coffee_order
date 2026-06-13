@@ -1901,7 +1901,13 @@ $('setupBtnAddTeam').addEventListener('click', async ()=>{
   toast('✅ '+name+' 링크 생성됨');
 });
 $('setupInpTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') $('setupBtnAddTeam').click(); });
-$('setupBtnSettings').addEventListener('click',()=>{ cfgId=setupCfgId; openPinModal('verify','order'); });
+$('setupBtnSettings').addEventListener('click', async ()=>{
+  // cfgId 확실히 설정 후 주문설정 열기
+  if(!setupCfgId) await initSetupCfgId();
+  cfgId = setupCfgId;
+  console.log('[설정] cfgId:', cfgId);
+  openPinModal('verify','order');
+});
 
 // 새로운 주문 버튼
 $('setupBtnNewOrder').addEventListener('click', async ()=>{
@@ -3339,6 +3345,7 @@ document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.addEventListener
 // 주문설정 통합 저장
 $('btnSaveOrderSettings').addEventListener('click', async ()=>{
   const btn = $('btnSaveOrderSettings');
+  console.log('[저장] cfgId:', cfgId, 'setupCfgId:', setupCfgId);
 
   // 가게선택 필수 검증
   const selBrands = [...document.querySelectorAll('.store-card.selected')].map(c=>c.dataset.store);
