@@ -42,7 +42,7 @@ header .date{font-size:.8rem;opacity:.75;}
   width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);
 }
 .pin-box h3{font-size:1rem;font-weight:800;margin-bottom:4px;}
-.pin-box .pin-sub{font-size:.78rem;color:var(--sub);margin-bottom:20px;}
+.pin-box .pin-sub{font-size:.78rem;color:var(--sub);margin-bottom:20px;white-space:pre-line;line-height:1.6;}
 .pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:22px;}
 .pin-dot{
   width:14px;height:14px;border-radius:50%;
@@ -300,6 +300,58 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
   cursor:pointer;padding:4px 4px 4px 2px;line-height:1;
 }
 .order-item .edit-btn:active{color:var(--primary);}
+/* ── 재주문 모달 ── */
+.reorder-date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none;}
+.reorder-date-tabs::-webkit-scrollbar{display:none;}
+.reorder-date-tab{
+  flex:none;padding:7px 14px;border:1.5px solid var(--line);border-radius:99px;
+  font-size:.8rem;font-weight:700;font-family:inherit;background:#FAFAF8;color:var(--sub);cursor:pointer;
+}
+.reorder-date-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.reorder-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 4px;border-bottom:1px dashed var(--line);
+}
+.reorder-item:last-child{border-bottom:none;}
+.reorder-chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;background:#fff;}
+.reorder-chk.checked{background:var(--primary);border-color:var(--primary);color:#fff;font-size:.8rem;}
+.reorder-info{flex:1;min-width:0;}
+.reorder-name{font-size:.88rem;font-weight:800;}
+.reorder-menu{font-size:.78rem;color:var(--sub);margin-top:1px;}
+.reorder-price{flex:none;font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.reorder-actions{display:flex;gap:8px;margin-top:14px;}
+.btn-reorder-all{
+  flex:none;padding:8px 12px;border:1.5px solid var(--primary);border-radius:9px;
+  font-size:.78rem;font-weight:700;font-family:inherit;background:#fff;color:var(--primary);cursor:pointer;
+}
+.btn-reorder-confirm{
+  flex:1;padding:13px 0;border:none;border-radius:12px;
+  background:var(--primary);color:#fff;font-size:.92rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.reorder-empty{text-align:center;color:var(--sub);font-size:.85rem;padding:30px 0;}
+.reorder-sel-count{font-size:.75rem;color:var(--primary);font-weight:700;margin-left:auto;}
+/* ── 주문 앱 연결 버튼 ── */
+.order-app-btns{display:flex;gap:8px;margin-top:10px;}
+.btn-kakaomap{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#FAE100;color:#3A1D1D;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.btn-baemin{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#2AC1BC;color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.btn-coupang{
+  flex:1;padding:11px 0;border:none;border-radius:11px;
+  background:#C00B1E;color:#fff;font-size:.85rem;font-weight:800;
+  font-family:inherit;cursor:pointer;
+}
+.receipt-store-notice{
+  font-size:.72rem;color:var(--sub);text-align:center;margin-top:8px;line-height:1.5;
+}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -576,7 +628,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <div class="cups" id="barCups">0잔</div>
     <div class="total" id="barTotal">0원</div>
   </div>
-  <div style="display:flex;gap:6px;"><button class="btn-receipt" id="btnOpenReceipt">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" style="display:none;">🗂 통합주문서</button></div>
+  <div style="display:flex;gap:6px;"><button class="btn-receipt" style="background:rgba(255,255,255,.2);color:#fff;" id="btnOpenReorder">🔁 재주문</button><button class="btn-receipt" id="btnOpenReceipt">📋 주문서</button><button class="btn-receipt" id="btnOpenAllReceipt" style="display:none;">🗂 통합주문서</button></div>
 </div>
 
 <!-- 영수증 모달 -->
@@ -592,6 +644,12 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="btn-copy" id="btnCopy">주문서 복사</button>
       <button class="btn-close-r" id="btnCloseReceipt">닫기</button>
     </div>
+    <div class="order-app-btns">
+      <button class="btn-kakaomap" id="btnKakaoMap">🗺 카카오맵</button>
+      <button class="btn-baemin" id="btnBaemin">🛵 배달의민족</button>
+      <button class="btn-coupang" id="btnCoupang">🚀 쿠팡이츠</button>
+    </div>
+    <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
   </div>
 </div>
 
@@ -612,6 +670,12 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
       <button class="btn-copy" id="btnCopyAll">통합주문서 복사</button>
       <button class="btn-close-r" id="btnCloseAllReceipt">닫기</button>
     </div>
+    <div class="order-app-btns">
+      <button class="btn-kakaomap" id="btnKakaoMapAll">🗺 카카오맵</button>
+      <button class="btn-baemin" id="btnBaeminAll">🛵 배달의민족</button>
+      <button class="btn-coupang" id="btnCoupangAll">🚀 쿠팡이츠</button>
+    </div>
+    <div class="receipt-store-notice">주문서를 복사한 뒤 앱에서 검색하세요</div>
   </div>
 </div>
 
@@ -724,7 +788,7 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
     <div class="admin-panel" id="opanelPricelimit">
       <div class="price-limit-box">
         <h3>💰 1인당 주문가격 한도</h3>
-        <div style="font-size:.75rem;color:#92400E;margin-bottom:8px;">설정한 금액을 초과하는 메뉴는 주문이 차단됩니다.</div>
+        <div style="font-size:.75rem;color:#92400E;margin-bottom:8px;">설정 금액 이하 메뉴만 선택가능합니다.</div>
         <div style="font-size:.75rem;font-weight:700;color:var(--sub);margin-bottom:6px;">빠른 선택</div>
         <div class="price-limit-presets">
           <button class="price-limit-preset" data-pl="2000">2,000원</button>
@@ -913,6 +977,26 @@ input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--
 
     <button class="btn-edit-save" id="btnEditSave">✅ 수정 저장</button>
     <button class="btn-edit-cancel" id="btnEditCancel">취소</button>
+  </div>
+</div>
+
+<!-- 재주문 모달 -->
+<div class="modal-bg" id="modalReorder">
+  <div class="modal-sheet" style="max-height:88vh;">
+    <div class="admin-header">
+      <h2>🔁 재주문</h2>
+      <button class="btn-admin-close" id="btnReorderClose">✕</button>
+    </div>
+    <div style="font-size:.78rem;color:var(--sub);margin-bottom:10px;">날짜를 선택하고 가져올 주문을 체크하세요.</div>
+    <!-- 날짜 탭 -->
+    <div class="reorder-date-tabs" id="reorderDateTabs"></div>
+    <!-- 주문 목록 -->
+    <div id="reorderList"><div class="reorder-empty">날짜를 선택해주세요</div></div>
+    <!-- 하단 버튼 -->
+    <div class="reorder-actions">
+      <button class="btn-reorder-all" id="btnReorderSelectAll">전체선택</button>
+      <button class="btn-reorder-confirm" id="btnReorderConfirm">✅ 선택 주문 가져오기 <span id="reorderSelCount"></span></button>
+    </div>
   </div>
 </div>
 
@@ -1341,6 +1425,288 @@ function renderOrders(){
 }
 
 
+
+
+/* ═══════════════════════════════════════
+   주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
+═══════════════════════════════════════ */
+
+// 현재 선택된 브랜드 검색 키워드
+function getStoreKeyword(){
+  const activeBrands = lockedBrands.length ? lockedBrands : [brand];
+  const KEYWORDS = {paik:'빽다방', mega:'메가MGC커피', compose:'컴포즈커피'};
+  return activeBrands.map(b=>KEYWORDS[b]||b).join(' ');
+}
+
+// 카카오맵 — GPS 기반 가까운 매장 검색
+function openKakaoMap(){
+  const keyword = getStoreKeyword();
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        const {latitude:lat, longitude:lng} = pos.coords;
+        // 카카오맵 장소검색 URL (현위치 기반)
+        const url = `https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`;
+        window.open(url, '_blank');
+      },
+      ()=>{
+        // GPS 실패 시 그냥 검색
+        window.open(`https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`, '_blank');
+      }
+    );
+  } else {
+    window.open(`https://map.kakao.com/link/search/${encodeURIComponent(keyword)}`, '_blank');
+  }
+}
+
+// 배달의민족 딥링크 — 주문서 복사 후 앱 열기
+async function openBaemin(copyFn){
+  await copyFn();
+  const keyword = getStoreKeyword();
+  // 배민 앱 딥링크 → 없으면 웹으로 폴백
+  const appUrl = `baemin://search?query=${encodeURIComponent(keyword)}`;
+  const webUrl = `https://www.baemin.com/search?query=${encodeURIComponent(keyword)}`;
+  // 딥링크 시도 후 300ms 내 반응없으면 웹으로
+  const win = window.open(appUrl, '_blank');
+  setTimeout(()=>{
+    try{ if(win) win.location.href = webUrl; }catch(e){ window.open(webUrl,'_blank'); }
+  }, 1500);
+  toast('주문서 복사됨 — 앱에서 붙여넣기하세요 📋');
+}
+
+// 쿠팡이츠 딥링크
+async function openCoupang(copyFn){
+  await copyFn();
+  const keyword = getStoreKeyword();
+  const appUrl = `coupangeats://search?keyword=${encodeURIComponent(keyword)}`;
+  const webUrl = `https://www.coupangeats.com/search?query=${encodeURIComponent(keyword)}`;
+  window.open(appUrl, '_blank');
+  setTimeout(()=>{ window.open(webUrl,'_blank'); }, 1500);
+  toast('주문서 복사됨 — 앱에서 붙여넣기하세요 📋');
+}
+
+// 개별 주문서 버튼
+$('btnKakaoMap').addEventListener('click', openKakaoMap);
+$('btnBaemin').addEventListener('click', ()=>openBaemin(copyReceipt));
+$('btnCoupang').addEventListener('click', ()=>openCoupang(copyReceipt));
+
+// 통합주문서 버튼
+$('btnKakaoMapAll').addEventListener('click', openKakaoMap);
+$('btnBaeminAll').addEventListener('click', ()=>openBaemin(copyAllReceipt));
+$('btnCoupangAll').addEventListener('click', ()=>openCoupang(copyAllReceipt));
+/* ═══════════════════════════════════════
+   재주문
+═══════════════════════════════════════ */
+let reorderDateList = [];     // [{date, label, sessions:[{sessionId, brand, count}]}]
+let reorderCurrentDate = '';  // 선택된 날짜
+let reorderItems = [];        // 현재 날짜의 주문 목록
+let reorderSelected = new Set(); // 선택된 주문 id
+
+async function openReorderModal(){
+  $('reorderDateTabs').innerHTML = '<div class="reorder-empty">날짜 목록 불러오는 중...</div>';
+  $('reorderList').innerHTML = '';
+  reorderSelected.clear();
+  $('modalReorder').classList.add('show');
+
+  try{
+    // 세션 ID에서 날짜 추출 (YYYYMMDD_N 형식)
+    const data = await sbFetch(
+      `coffee_orders?select=session_id,brand,created_at&order=created_at.desc`
+    );
+
+    // 날짜별 그룹핑
+    const dateMap = new Map();
+    data.forEach(o=>{
+      const dateStr = o.session_id ? o.session_id.substring(0,8) : '';
+      if(!/^\d{8}$/.test(dateStr)) return;
+      const y=dateStr.slice(0,4), m=dateStr.slice(4,6), d=dateStr.slice(6,8);
+      const label = parseInt(m)+'월 '+parseInt(d)+'일';
+      if(!dateMap.has(dateStr)) dateMap.set(dateStr,{date:dateStr,label,sessions:new Set()});
+      dateMap.get(dateStr).sessions.add(o.session_id);
+    });
+
+    reorderDateList = [...dateMap.entries()]
+      .sort((a,b)=>b[0].localeCompare(a[0]))
+      .slice(0,14) // 최근 14일
+      .map(([date,v])=>({date,label:v.label,sessions:[...v.sessions]}));
+
+    renderReorderDateTabs();
+
+    // 오늘 제외한 가장 최근 날짜 자동 선택
+    const todayStr2 = todayBase();
+    const firstOther = reorderDateList.find(d=>d.date!==todayStr2);
+    if(firstOther) loadReorderDate(firstOther.date);
+    else if(reorderDateList.length) loadReorderDate(reorderDateList[0].date);
+
+  }catch(e){
+    $('reorderDateTabs').innerHTML = '<div class="reorder-empty">불러오기 실패: '+e.message+'</div>';
+  }
+}
+
+function renderReorderDateTabs(){
+  const tabs = $('reorderDateTabs');
+  tabs.innerHTML = '';
+  if(!reorderDateList.length){
+    tabs.innerHTML = '<div style="font-size:.82rem;color:var(--sub);">이전 주문 내역이 없습니다.</div>';
+    return;
+  }
+  reorderDateList.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'reorder-date-tab' + (d.date===reorderCurrentDate?' active':'');
+    btn.textContent = d.label;
+    btn.addEventListener('click',()=>loadReorderDate(d.date));
+    tabs.appendChild(btn);
+  });
+}
+
+async function loadReorderDate(date){
+  reorderCurrentDate = date;
+  reorderSelected.clear();
+  document.querySelectorAll('.reorder-date-tab').forEach(b=>{
+    const info = reorderDateList.find(d=>d.label===b.textContent);
+    b.classList.toggle('active', info&&info.date===date);
+  });
+  $('reorderList').innerHTML = '<div class="reorder-empty">불러오는 중...</div>';
+
+  try{
+    // 해당 날짜의 모든 주문 조회
+    const data = await sbFetch(
+      `coffee_orders?session_id=like.${date}%&order=created_at.asc`
+    );
+    reorderItems = data;
+    renderReorderList();
+  }catch(e){
+    $('reorderList').innerHTML = '<div class="reorder-empty">오류: '+e.message+'</div>';
+  }
+}
+
+function renderReorderList(){
+  const list = $('reorderList');
+  if(!reorderItems.length){
+    list.innerHTML = '<div class="reorder-empty">해당 날짜의 주문 내역이 없습니다.</div>';
+    updateReorderCount();
+    return;
+  }
+
+  // 세션별 그룹 헤더 표시
+  const sessionMap = new Map();
+  reorderItems.forEach(o=>{
+    if(!sessionMap.has(o.session_id)) sessionMap.set(o.session_id,[]);
+    sessionMap.get(o.session_id).push(o);
+  });
+
+  list.innerHTML = '';
+  sessionMap.forEach((items, sid)=>{
+    // 세션 헤더
+    const header = document.createElement('div');
+    const BNAMES = {paik:'빽다방',mega:'메가커피',compose:'컴포즈'};
+    const brands = [...new Set(items.map(o=>o.brand))].map(b=>BNAMES[b]||b).join(', ');
+    const total = items.reduce((s,o)=>s+o.price,0);
+    const round = sid.includes('_') ? sid.split('_').slice(-1)[0]+'회차' : '1회차';
+    header.style.cssText='font-size:.72rem;font-weight:800;color:var(--primary);padding:8px 4px 4px;border-bottom:2px solid var(--primary);margin-bottom:4px;display:flex;justify-content:space-between;';
+    header.innerHTML='<span>'+round+' · '+brands+'</span><span style="color:var(--sub);">'+items.length+'잔 / '+won(total)+'</span>';
+    list.appendChild(header);
+
+    items.forEach(o=>{
+      const div = document.createElement('div');
+      div.className = 'reorder-item';
+      const opts=[o.shot?'샷추가':null,o.memo||null].filter(Boolean).join(' · ');
+      div.innerHTML =
+        '<div class="reorder-chk" data-id="'+o.id+'"></div>'+
+        '<div class="reorder-info">'+
+          '<div class="reorder-name"></div>'+
+          '<div class="reorder-menu"><span class="temp-chip '+o.temp+'" style="font-size:.62rem;padding:1px 5px;">'+o.temp+'</span> <span class="rmenu"></span>'+(opts?' · <span style="color:var(--sub);">'+opts+'</span>':'')+'</div>'+
+        '</div>'+
+        '<div class="reorder-price">'+won(o.price)+'</div>';
+      div.querySelector('.reorder-name').textContent = o.name;
+      div.querySelector('.rmenu').textContent = o.menu;
+      const chk = div.querySelector('.reorder-chk');
+      chk.addEventListener('click',()=>{
+        if(reorderSelected.has(o.id)){
+          reorderSelected.delete(o.id);
+          chk.classList.remove('checked');
+          chk.textContent = '';
+        } else {
+          reorderSelected.add(o.id);
+          chk.classList.add('checked');
+          chk.textContent = '✓';
+        }
+        updateReorderCount();
+      });
+      list.appendChild(div);
+    });
+  });
+  updateReorderCount();
+}
+
+function updateReorderCount(){
+  const cnt = reorderSelected.size;
+  $('reorderSelCount').textContent = cnt ? '('+cnt+'잔)' : '';
+}
+
+// 전체선택 토글
+$('btnReorderSelectAll').addEventListener('click',()=>{
+  const allIds = reorderItems.map(o=>o.id);
+  const allSelected = allIds.every(id=>reorderSelected.has(id));
+  if(allSelected){
+    // 전체 해제
+    reorderSelected.clear();
+    document.querySelectorAll('.reorder-chk').forEach(c=>{ c.classList.remove('checked'); c.textContent=''; });
+    $('btnReorderSelectAll').textContent='전체선택';
+  } else {
+    // 전체 선택
+    allIds.forEach(id=>reorderSelected.add(id));
+    document.querySelectorAll('.reorder-chk').forEach(c=>{ c.classList.add('checked'); c.textContent='✓'; });
+    $('btnReorderSelectAll').textContent='전체해제';
+  }
+  updateReorderCount();
+});
+
+// 선택 주문 가져오기
+$('btnReorderConfirm').addEventListener('click', async ()=>{
+  if(!reorderSelected.size){ toast('가져올 주문을 선택해주세요'); return; }
+
+  const btn = $('btnReorderConfirm');
+  btn.disabled=true; btn.textContent='가져오는 중...';
+
+  const selectedOrders = reorderItems.filter(o=>reorderSelected.has(o.id));
+  let successCount = 0;
+
+  try{
+    for(const o of selectedOrders){
+      // 가격 한도 체크
+      if(maxPricePerOrder>0 && o.price>maxPricePerOrder) continue;
+      // 새 ID로 현재 세션에 추가
+      await sbFetch('coffee_orders',{
+        method:'POST',
+        body:JSON.stringify({
+          id: Date.now()+'_'+Math.random().toString(36).slice(2,5),
+          session_id: sessionId,
+          brand: lockedBrands.includes(o.brand) ? o.brand : (lockedBrands[0]||o.brand),
+          name: o.name,
+          menu: o.menu,
+          temp: o.temp,
+          shot: o.shot,
+          memo: o.memo,
+          price: o.price,
+        })
+      });
+      successCount++;
+    }
+    await fetchOrders();
+    $('modalReorder').classList.remove('show');
+    toast('✅ '+successCount+'잔 재주문 완료!');
+  }catch(e){
+    toast('가져오기 실패: '+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='✅ 선택 주문 가져오기 <span id="reorderSelCount"></span>';
+  }
+});
+
+$('btnReorderClose').addEventListener('click',()=>$('modalReorder').classList.remove('show'));
+$('modalReorder').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+$('btnOpenReorder').addEventListener('click', openReorderModal);
 /* ═══════════════════════════════════════
    주문 수정
 ═══════════════════════════════════════ */
@@ -1694,6 +2060,10 @@ function updateOrderSummary(){
   // 잔수
   const hcVal = parseInt($('inpHeadcount').value||'0',10);
   $('summaryHeadcount').innerHTML = '📋 주문잔수: <span style="color:'+(hcVal?'var(--primary)':'var(--sub)')+';">'+(hcVal?hcVal+'잔':'설정 없음')+'</span>';
+  // 가격 한도
+  const plVal = parseInt(($('inpPriceLimit')||{value:''}).value||'0',10);
+  const plEl = document.getElementById('summaryPriceLimit');
+  if(plEl) plEl.innerHTML = '💰 주문가격: <span style="color:'+(plVal?'#EA580C':'var(--sub)')+';">'+(plVal?plVal.toLocaleString()+'원 이하':'제한 없음')+'</span>';
 }
 
 /* ── 주문설정 모달 ── */
@@ -1704,7 +2074,12 @@ function openOrderModal(){
 }
 function closeOrderModal(){ $('modalOrder').classList.remove('show'); }
 function switchOrderTab(tab){
-  
+  document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
+  document.querySelectorAll('#modalOrder .admin-panel').forEach(p=>p.classList.remove('show'));
+  const p = $('opanel'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if(p) p.classList.add('show');
+}
+
 /* ── 1인당 주문가격 한도 ── */
 
 document.querySelectorAll('.price-limit-preset').forEach(btn=>{
@@ -1727,7 +2102,8 @@ $('btnClearPriceLimit').addEventListener('click',()=>{
   updateOrderSummary();
   toast('가격 한도 해제됨 (저장 전)');
 });
-document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
+function switchOrderTab(tab){
+  document.querySelectorAll('.admin-tab[data-otab]').forEach(b=>b.classList.toggle('active',b.dataset.otab===tab));
   document.querySelectorAll('#modalOrder .admin-panel').forEach(p=>p.classList.remove('show'));
   const p = $('opanel'+tab.charAt(0).toUpperCase()+tab.slice(1));
   if(p) p.classList.add('show');
@@ -2032,10 +2408,8 @@ $('btnReset').addEventListener('click',async()=>{
   try{ await deleteSession(); await fetchOrders(); toast('초기화되었습니다'); }catch(e){ toast('초기화 실패: '+e.message); }
 });
 $('btnNewSession').addEventListener('click',()=>{
-  if(!confirm('새 세션을 시작하면 지금 화면이 초기화됩니다.\n(기존 데이터는 DB에 남아있습니다)\n계속할까요?')) return;
-  newSession();
-  // PIN 없이 바로 주문설정 열기
-  openOrderModal();
+  // PIN 인증 후 새 주문 시작
+  openPinModal('verify', 'newSession');
 });
 // 영수증
 $('btnOpenReceipt').addEventListener('click',openReceipt);
@@ -2064,7 +2438,12 @@ function openPinModal(mode = 'verify', target = 'order'){
   renderPinDots();
   $('pinErrorMsg').textContent = '';
   if(mode === 'verify'){
-    $('pinSub').textContent = '4자리 PIN을 입력하세요';
+    const desc = {
+      'order':      '주문설정을 변경하려면\n관리자 PIN을 입력하세요',
+      'menu':       '메뉴를 수정하려면\n관리자 PIN을 입력하세요',
+      'newSession': '새 주문을 시작하면 현재 주문이 초기화됩니다.\n관리자 PIN을 입력하세요',
+    };
+    $('pinSub').textContent = desc[target] || '4자리 PIN을 입력하세요';
   } else if(mode === 'set_new'){
     $('pinSub').textContent = '새 PIN 4자리를 입력하세요';
   }
@@ -2116,6 +2495,11 @@ function processPinComplete(){
     if(pinBuffer === getPin()){
       closePinModal();
       if(pinTarget === 'menu') openMenuModal();
+      else if(pinTarget === 'newSession'){
+        if(!confirm('새 세션을 시작하면 지금 화면이 초기화됩니다.\n(기존 데이터는 DB에 남아있습니다)\n계속할까요?')) return;
+        newSession();
+        openOrderModal();
+      }
       else openOrderModal();
     } else {
       pinShakeError('PIN이 틀렸습니다');
