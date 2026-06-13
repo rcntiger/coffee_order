@@ -3377,7 +3377,11 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
     // 저장 후 모달 닫기
     closeOrderModal();
     toast('✅ 주문설정이 저장되었습니다');
-    if(pageMode==='setup') updateSetupSummary();
+    if(pageMode==='setup'){
+      cfgId = setupCfgId; // 저장된 cfgId 동기화
+      updateSetupSummary();
+      await renderSetupTeamList(); // 링크에 최신 cfg 반영
+    }
   }catch(e){
     toast('저장 실패: '+e.message);
   }finally{
@@ -3827,8 +3831,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
   // 인원 현황 바
   renderHeadcountBar();
 
-  // 가격 한도/가게 설정 반영 후 메뉴 재렌더링
+  // 가게/가격 설정 반영 후 메뉴 재렌더링
   renderMenuSelect();
+  applyBrandTheme();
 
   // 첫 접속 시 시작 화면 표시
   if(pageMode === 'setup'){
