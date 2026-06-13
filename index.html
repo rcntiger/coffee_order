@@ -2602,12 +2602,19 @@ async function addOrder(){
   const row={id:Date.now()+'_'+Math.random().toString(36).slice(2,6),session_id:sessionId,brand,name,menu:menuName,temp:curTemp,shot,memo:$('inpMemo').value.trim(),price};
   isAdding=true; const btn=$('btnAdd'); btn.disabled=true; btn.textContent='저장 중...';
   try{
-    await insertOrder(row); await fetchOrders();
+    // 수량만큼 반복 저장
+    for(let q=0; q<orderQty; q++){
+      const qrow = {...row, id: Date.now()+'_'+Math.random().toString(36).slice(2,6)};
+      await insertOrder(qrow);
+    }
+    await fetchOrders();
     lastOrderName = name; // 이름 기억
     renderMyOrders();
-    toast(name+'님 주문 완료 ☕');
+    toast(name+'님 '+orderQty+'잔 주문 완료 ☕');
     $('inpName').value=''; $('inpMemo').value=''; $('chkShot').checked=false;
-    $('inpCustomName').value=''; $('inpCustomPrice').value=''; $('inpName').focus();
+    $('inpCustomName').value=''; $('inpCustomPrice').value='';
+    setQty(1); // 수량 초기화
+    $('inpName').focus();
   }catch(e){ toast('저장 실패: '+e.message); }
   finally{ isAdding=false; btn.disabled=false; btn.textContent='주문 담기'; }
 }
