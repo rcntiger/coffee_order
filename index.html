@@ -534,6 +534,18 @@ body.brand-compose .setup-header{background:#5C3A21;}
 .setup-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:8px;}
 .btn-setup-done{width:100%;padding:15px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;}
 .btn-setup-done:disabled{opacity:.45;cursor:not-allowed;}
+/* ── 주문 받기 ON/OFF ── */
+.order-open-bar{
+  margin:0 14px 14px;
+  border-radius:14px;overflow:hidden;
+}
+.btn-order-open{
+  width:100%;padding:14px 0;border:none;
+  border-radius:14px;font-size:1rem;font-weight:800;
+  font-family:inherit;cursor:pointer;transition:all .2s;
+}
+.btn-order-open.on{background:#16A34A;color:#fff;}
+.btn-order-open.off{background:#EF4444;color:#fff;}
 .notice{font-size:.72rem;color:var(--sub);text-align:center;margin:4px 0 20px;line-height:1.5;}
 /* ── 인원 현황 바 ── */
 .headcount-bar{
@@ -801,6 +813,11 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
   </div>
 </div>
+  <!-- 주문 받기 ON/OFF 바 -->
+  <div class="order-open-bar order-hide" id="orderOpenBar">
+    <button class="btn-order-open off" id="btnOrderOpen2">🔴 주문 마감 중 — 탭하여 시작</button>
+  </div>
+
   <!-- 인원 현황 바 -->
   <div class="headcount-bar order-hide" id="headcountBar">
     <div class="hc-top">
@@ -1659,16 +1676,17 @@ function connectRealtime(){
   async function pollSettings(){
     try{
       const rows = await sbFetch(
-        `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=locked_brand,deadline_ts,headcount,price_limit&order=updated_at.desc&limit=1`
+        `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=locked_brand,deadline_ts,headcount,price_limit,order_open&order=updated_at.desc&limit=1`
       );
       const hash = JSON.stringify(rows[0]||{});
       if(hash !== lastSettingsHash){
         lastSettingsHash = hash;
-        await Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit()]);
+        await Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit(), loadOrderOpen()]);
         if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
         renderHeadcountBar();
         renderMenuSelect();
         applyBrandTheme();
+        applyOrderOpen();
         console.log('[설정] 변경 감지 → 적용됨');
       }
     }catch(e){}
@@ -2119,6 +2137,80 @@ function makeOrderNum(index){
   const seq = String(index+1).padStart(3,'0');
   return date+' '+team+' '+round+'-'+seq;
 }
+
+/* ═══════════════════════════════════════
+   주문 받기 ON/OFF
+═══════════════════════════════════════ */
+let isOrderOpen = false; // 기본: 주문 마감
+
+async function loadOrderOpen(){
+  try{
+    const rows = await sbFetch(
+      `session_settings?session_id=eq.${encodeURIComponent(cfgId||'__global__')}&brand=eq.__global__&select=order_open`
+    );
+    isOrderOpen = rows[0]?.order_open || false;
+  }catch(e){ isOrderOpen = false; }
+  applyOrderOpen();
+}
+
+async function saveOrderOpen(val){
+  isOrderOpen = val;
+  try{
+    await sbFetch('session_settings',{
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+      body:JSON.stringify({
+        session_id: cfgId||'__global__',
+        brand: '__global__',
+        order_open: val,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ console.warn('[주문받기] DB 저장 실패:', e.message); }
+  applyOrderOpen();
+}
+
+function applyOrderOpen(){
+  const btn = $('btnOrderOpen2');
+  const addBtn = $('btnAdd');
+  const bar = $('orderOpenBar');
+
+  // 취합 페이지: ON/OFF 버튼 표시
+  if(pageMode === 'admin'){
+    if(bar) bar.style.display = 'block';
+    if(btn){
+      if(isOrderOpen){
+        btn.className = 'btn-order-open on';
+        btn.textContent = '🟢 주문 받는 중 — 탭하여 마감';
+      } else {
+        btn.className = 'btn-order-open off';
+        btn.textContent = '🔴 주문 마감 중 — 탭하여 시작';
+      }
+    }
+  }
+
+  // 주문 페이지: 주문 담기 버튼 활성/비활성
+  if(pageMode === 'order'){
+    if(bar) bar.style.display = 'none';
+    if(addBtn){
+      // 마감시간 초과 시에는 별도 처리 (tickCountdown에서)
+      if(deadlineTs && deadlineTs <= Date.now()) return;
+      if(isOrderOpen){
+        addBtn.disabled = false;
+        addBtn.textContent = '주문 담기';
+      } else {
+        addBtn.disabled = true;
+        addBtn.textContent = '🔴 주문 마감 중';
+      }
+    }
+  }
+}
+
+// 취합 페이지: ON/OFF 토글
+$('btnOrderOpen2').addEventListener('click', async ()=>{
+  await saveOrderOpen(!isOrderOpen);
+  toast(isOrderOpen ? '✅ 주문을 시작합니다' : '🔴 주문을 마감했습니다');
+});
 /* ═══════════════════════════════════════
    주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
 ═══════════════════════════════════════ */
@@ -3951,6 +4043,7 @@ $('btnClearDeadline').addEventListener('click',()=>{
     loadHeadcount(),
     loadStoreLock(),
     loadPriceLimit(),
+    loadOrderOpen(),
     fetchMenusFromDB(pageMode === 'setup'), // 메인 페이지는 항상 최신 메뉴 로드
   ]);
 
