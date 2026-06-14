@@ -718,7 +718,7 @@ body.brand-compose .setup-header{background:#5C3A21;}
 <div class="setup-page" id="setupPage">
   <div class="setup-header">
     <div class="sh-icon">☕</div>
-    <h1>주문 취합 설정</h1>
+    <h1>음료 주문 받기</h1>
     <p>주문설정 후 링크를 생성하고<br>단톡방에 공유하세요</p>
     <button id="setupBtnNewOrder" style="margin-top:16px;padding:10px 24px;border:none;border-radius:10px;background:var(--accent);color:#1E1E1E;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
   </div>
@@ -2181,10 +2181,10 @@ function applyOrderOpen(){
     if(btn){
       if(isOrderOpen){
         btn.className = 'btn-order-open on';
-        btn.textContent = '🟢 주문 받는 중 — 탭하여 마감';
+        btn.textContent = '🟢 주문 접수 — 탭하여 마감';
       } else {
         btn.className = 'btn-order-open off';
-        btn.textContent = '🔴 주문 마감 중 — 탭하여 시작';
+        btn.textContent = '🔴 주문 마감 — 탭하여 시작';
       }
     }
   }
@@ -2200,7 +2200,7 @@ function applyOrderOpen(){
         addBtn.textContent = '주문 담기';
       } else {
         addBtn.disabled = true;
-        addBtn.textContent = '🔴 주문 마감 중';
+        addBtn.textContent = '🔴 주문 마감됨';
       }
     }
   }
@@ -2209,7 +2209,7 @@ function applyOrderOpen(){
 // 취합 페이지: ON/OFF 토글
 $('btnOrderOpen2').addEventListener('click', async ()=>{
   await saveOrderOpen(!isOrderOpen);
-  toast(isOrderOpen ? '✅ 주문을 시작합니다' : '🔴 주문을 마감했습니다');
+  toast(isOrderOpen ? '✅ 주문 접수를 시작합니다' : '🔴 주문을 마감했습니다');
 });
 /* ═══════════════════════════════════════
    주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
