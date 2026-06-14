@@ -535,6 +535,11 @@ body.brand-compose .setup-header{background:#5C3A21;}
 .btn-setup-done{width:100%;padding:15px 0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;}
 .btn-setup-done:disabled{opacity:.45;cursor:not-allowed;}
 /* ── 주문 받기 ON/OFF ── */
+body.mode-setup #orderOpenBar{ display:none !important; }
+body.mode-setup #setupNotice{ display:block !important; }
+body:not(.mode-setup) #setupNotice{ display:none !important; }
+html.mode-setup-pre #orderOpenBar{ display:none !important; }
+html.mode-setup-pre #setupNotice{ display:block !important; }
 .order-open-bar{
   margin:0 14px 14px;
   border-radius:14px;overflow:hidden;
@@ -719,13 +724,12 @@ body.brand-compose .setup-header{background:#5C3A21;}
   <div class="setup-header">
     <div class="sh-icon">☕</div>
     <h1>음료 주문 받기</h1>
-    <p>주문설정 후 링크를 생성하고<br>단톡방에 공유하세요</p>
+    <p></p>
     <button id="setupBtnNewOrder" style="margin-top:16px;padding:10px 24px;border:none;border-radius:10px;background:var(--accent);color:#1E1E1E;font-size:.88rem;font-weight:800;font-family:inherit;cursor:pointer;">🔄 새 주문</button>
   </div>
   <div class="setup-body">
     <div class="setup-card">
       <h2>⚙️ 주문설정 <span style="color:#EF4444;font-size:.65rem;vertical-align:1px;">필수(가게)</span></h2>
-      <p>가게 선택은 필수입니다. 마감시간, 잔수, 가격은 선택사항입니다.</p>
       <div id="setupSummary">
         <div class="setup-summary-row"><span class="setup-summary-label">🏪 가게</span><span class="setup-summary-val" id="setupSumStore" style="color:#EF4444;">미설정 (필수)</span></div>
         <div class="setup-summary-row"><span class="setup-summary-label">⏰ 마감</span><span class="setup-summary-val" id="setupSumDeadline" style="color:var(--sub);">미설정</span></div>
@@ -813,9 +817,9 @@ body.brand-compose .setup-header{background:#5C3A21;}
     </div>
   </div>
 </div>
-  <!-- 주문 받기 ON/OFF 바 -->
+  <!-- 안내 문구 -->
   <div class="order-open-bar order-hide" id="orderOpenBar">
-    <button class="btn-order-open off" id="btnOrderOpen2">🔴 주문 마감 중 — 탭하여 시작</button>
+    <button class="btn-order-open off" id="btnOrderOpen2">🔴 탭하여 주문 접수</button>
   </div>
 
   <!-- 인원 현황 바 -->
@@ -896,6 +900,13 @@ body.brand-compose .setup-header{background:#5C3A21;}
 
   <p class="notice">※ 가격은 매장 상황에 따라 다를 수 있습니다.</p>
 </main>
+
+<!-- 설정 페이지 안내 문구 -->
+<div style="display:none;" id="setupNotice">
+  <div style="margin:0 14px 14px;background:#FFF9F0;border:1.5px solid #FED7AA;border-radius:14px;padding:14px 16px;text-align:center;font-size:.88rem;font-weight:700;color:#C2410C;line-height:1.7;">
+    주문 링크를 공유하고 취합 링크로 열어 접수하세요.
+  </div>
+</div>
 
 <div class="bottom-bar order-hide">
   <div class="sum">
@@ -2181,10 +2192,10 @@ function applyOrderOpen(){
     if(btn){
       if(isOrderOpen){
         btn.className = 'btn-order-open on';
-        btn.textContent = '🟢 주문 접수 — 탭하여 마감';
+        btn.textContent = '🟢 탭하여 주문 마감';
       } else {
         btn.className = 'btn-order-open off';
-        btn.textContent = '🔴 주문 마감 — 탭하여 시작';
+        btn.textContent = '🔴 탭하여 주문 접수';
       }
     }
   }
