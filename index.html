@@ -1593,6 +1593,18 @@ function loadSession(){
 async function syncSessionFromDB(){
   // cfgId가 있으면 DB에서 최신 sessionId 동기화
   if(!cfgId) return;
+  // 날짜가 바뀌면 order_open 자동 초기화
+  const stored = localStorage.getItem(getTeamKey());
+  if(stored){
+    try{
+      const s = JSON.parse(stored);
+      const storedDate = s.sessionId ? s.sessionId.substring(0,8) : '';
+      if(storedDate && storedDate !== todayBase()){
+        console.log('[세션] 날짜 변경 감지 → order_open 초기화');
+        await saveOrderOpen(false);
+      }
+    }catch(e){}
+  }
   try{
     const rows = await sbFetch(
       `session_settings?session_id=eq.${encodeURIComponent(cfgId)}&brand=eq.__global__&select=session_count,session_key`
@@ -2058,6 +2070,7 @@ document.addEventListener('click', async (e)=>{
     if(countdownTimer) clearInterval(countdownTimer);
     await clearHeadcount();
     maxPricePerOrder = 0; await savePriceLimit();
+    await saveOrderOpen(false); // 주문 접수 초기화
     sessionCount = (sessionCount||1) + 1;
     sessionId = todayBase()+'_'+(teamName||'')+'_'+sessionCount;
     saveSession();
@@ -2219,8 +2232,27 @@ function applyOrderOpen(){
 
 // 취합 페이지: ON/OFF 토글
 $('btnOrderOpen2').addEventListener('click', async ()=>{
-  await saveOrderOpen(!isOrderOpen);
-  toast(isOrderOpen ? '✅ 주문 접수를 시작합니다' : '🔴 주문을 마감했습니다');
+  const opening = !isOrderOpen;
+  await saveOrderOpen(opening);
+  if(opening){
+    // 주문 접수 시작
+    if(deadlineTs && deadlineTs > Date.now()){
+      // 기존 마감시간으로 카운팅 시작
+      deadlineStartTs = Date.now();
+      await saveDeadline();
+      startCountdown();
+      toast('✅ 주문 접수를 시작합니다');
+    } else if(deadlineTs && deadlineTs <= Date.now()){
+      toast('⚠️ 마감시간이 지났습니다. 설정을 변경해주세요');
+    } else {
+      toast('✅ 주문 접수를 시작합니다');
+    }
+  } else {
+    // 주문 마감
+    if(countdownTimer) clearInterval(countdownTimer);
+    $('deadlineBar').classList.remove('show');
+    toast('🔴 주문을 마감했습니다');
+  }
 });
 /* ═══════════════════════════════════════
    주문 앱 연결 (카카오맵 / 배민 / 쿠팡이츠)
@@ -3281,7 +3313,14 @@ function toast(msg){
 // 브랜드 탭
 document.querySelectorAll('.brand-tab').forEach(btn=>{
   btn.addEventListener('click',async()=>{
-    const b=btn.dataset.brand; if(b===brand) return;
+    const b=btn.dataset.brand;
+    // 주문 페이지에서는 탭 클릭 시 홈페이지로 이동
+    if(pageMode === 'order'){
+      const url = STORE_URLS[b];
+      if(url) window.open(url, '_blank');
+      return;
+    }
+    if(b===brand) return;
     if(lockedBrands.length > 0 && !lockedBrands.includes(b)){ toast('🔒 관리자가 가게를 고정했습니다'); return; }
     if(orders.length&&!confirm('브랜드를 '+BRANDS[b].label+'(으)로 바꾸면\n현재 세션 주문이 보이지 않게 됩니다.\n계속할까요?')) return;
     brand=b; curCat='전체'; saveSession(); applyBrandTheme(); renderCats(); renderMenuSelect(); await fetchOrders();
@@ -3395,6 +3434,7 @@ function processPinComplete(){
           $('deadlineBar').classList.remove('show');
           await clearHeadcount();
           maxPricePerOrder = 0; await savePriceLimit();
+          await saveOrderOpen(false); // 주문 접수 초기화
           // 임시값도 초기화
           tmpBrands=[]; tmpDeadlineTs=0; tmpHeadcount=0; tmpPriceLimit=0;
           // 메뉴 재렌더링 (가격 한도 해제 반영)
@@ -3760,6 +3800,12 @@ $('btnClearHeadcount').addEventListener('click',()=>{
 ═══════════════════════════════════════ */
 let lockedBrands = []; // [] = 잠금 없음 (전체 사용)
 
+
+const STORE_URLS = {
+  paik: 'https://www.paikdabang.com',
+  mega: 'https://www.mega-mgccoffee.com',
+  compose: 'https://www.composecoffee.com',
+};
 const STORE_META = {
   paik:    { name:'빽다방',    icon:'🐔' },
   mega:    { name:'메가커피',  icon:'☕' },
