@@ -798,9 +798,9 @@ html.mode-setup-pre #setupNotice{ display:block !important; }
     </div>
   </div>
   <div class="brand-tabs" id="brandTabsWrap">
-    <button class="brand-tab active" data-brand="paik">빽다방</button>
-    <button class="brand-tab" data-brand="mega">메가커피</button>
-    <button class="brand-tab" data-brand="compose">컴포즈</button>
+    <button class="brand-tab active" data-brand="paik">🏠 빽다방</button>
+    <button class="brand-tab" data-brand="mega">🏠 메가커피</button>
+    <button class="brand-tab" data-brand="compose">🏠 컴포즈</button>
   </div>
 </header>
 
@@ -1705,7 +1705,7 @@ function connectRealtime(){
       if(hash !== lastSettingsHash){
         lastSettingsHash = hash;
         await Promise.all([loadDeadline(), loadHeadcount(), loadStoreLock(), loadPriceLimit(), loadOrderOpen()]);
-        if(deadlineTs>Date.now()) startCountdown(); else if(deadlineTs) tickCountdown();
+        if(deadlineTs>Date.now() && isOrderOpen) startCountdown(); else if(deadlineTs && deadlineTs<=Date.now()) tickCountdown();
         renderHeadcountBar();
         renderMenuSelect();
         applyBrandTheme();
@@ -4104,9 +4104,9 @@ $('btnClearDeadline').addEventListener('click',()=>{
     fetchMenusFromDB(pageMode === 'setup'), // 메인 페이지는 항상 최신 메뉴 로드
   ]);
 
-  // 마감시간 카운트다운 시작
-  if(deadlineTs && deadlineTs > Date.now()) startCountdown();
-  else if(deadlineTs){
+  // 마감시간 카운트다운 시작 (주문 접수 중일 때만)
+  if(deadlineTs && deadlineTs > Date.now() && isOrderOpen) startCountdown();
+  else if(deadlineTs && deadlineTs <= Date.now()){
     tickCountdown(); // 마감됨 표시 + 버튼 비활성화
   }
 
