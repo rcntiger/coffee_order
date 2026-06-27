@@ -802,6 +802,9 @@ html.mode-setup-pre #setupNotice{ display:block !important; }
     <button class="brand-tab" data-brand="mega">🏠 메가커피</button>
     <button class="brand-tab" data-brand="compose">🏠 컴포즈</button>
   </div>
+  <div id="storeHomeNotice" style="display:none;font-size:.72rem;color:rgba(255,255,255,.7);text-align:center;margin-top:6px;">
+    ※ 클릭하여 자세한 메뉴는 홈피에서 확인
+  </div>
 </header>
 
 <!-- 마감 카운트다운 바 -->
@@ -2109,9 +2112,12 @@ function applyOrderMode(){
   // 제목 변경
   const h1 = document.querySelector('header h1');
   if(h1) h1.childNodes[0].textContent = '☕ 주문 ';
+  // 가게 홈피 안내 문구 표시
+  const notice = document.getElementById('storeHomeNotice');
+  if(notice) notice.style.display = 'block';
   // 안내 문구 변경
-  const notice = document.querySelector('.notice');
-  if(notice) notice.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
+  const noticeEl = document.querySelector('.notice');
+  if(noticeEl) noticeEl.textContent = '※ 이름과 메뉴를 선택하고 주문 담기를 눌러주세요.';
 }
 /* ═══════════════════════════════════════
    팀별 링크 생성
@@ -2235,15 +2241,15 @@ $('btnOrderOpen2').addEventListener('click', async ()=>{
   const opening = !isOrderOpen;
   await saveOrderOpen(opening);
   if(opening){
-    // 주문 접수 시작
-    if(deadlineTs && deadlineTs > Date.now()){
-      // 기존 마감시간으로 카운팅 시작
-      deadlineStartTs = Date.now();
+    // 주문 접수 시작 — duration 기반으로 마감시간 재계산
+    if(deadlineDuration > 0){
+      // 지금 시점부터 duration분 후로 마감시간 재설정
+      const now = Date.now();
+      deadlineTs = now + deadlineDuration * 60 * 1000;
+      deadlineStartTs = now;
       await saveDeadline();
       startCountdown();
-      toast('✅ 주문 접수를 시작합니다');
-    } else if(deadlineTs && deadlineTs <= Date.now()){
-      toast('⚠️ 마감시간이 지났습니다. 설정을 변경해주세요');
+      toast('✅ 주문 접수를 시작합니다 ('+deadlineDuration+'분 카운팅)');
     } else {
       toast('✅ 주문 접수를 시작합니다');
     }
@@ -3619,7 +3625,8 @@ $('btnSaveOrderSettings').addEventListener('click', async ()=>{
 
     // 마감시간
     if(tmpDeadlineTs > Date.now()){
-      await setDeadline(tmpDeadlineTs);
+      const dur = Math.round((tmpDeadlineTs - Date.now()) / 60000);
+      await setDeadline(tmpDeadlineTs, dur);
     } else {
       await clearDeadlineData();
       if(countdownTimer) clearInterval(countdownTimer);
@@ -3919,6 +3926,7 @@ $('btnUnlockStore').addEventListener('click',()=>{
 ═══════════════════════════════════════ */
 let deadlineTs = 0;       // 마감 시각 (타임스탬프 ms)
 let deadlineStartTs = 0;  // 설정 시작 시각 (진행바 계산용)
+let deadlineDuration = 0; // 마감 지속 시간 (분)
 let countdownTimer = null;
 
 async function loadDeadline(){
@@ -3928,6 +3936,7 @@ async function loadDeadline(){
     );
     deadlineTs = data[0]?.deadline_ts || 0;
     deadlineStartTs = data[0]?.deadline_start_ts || 0;
+    deadlineDuration = data[0]?.deadline_duration || 0;
   }catch(e){
     console.warn('[마감] DB 로드 실패:', e.message);
     deadlineTs = 0; deadlineStartTs = 0;
@@ -3942,6 +3951,7 @@ async function saveDeadline(){
         session_id: cfgId||'__global__', brand: '__global__',
         deadline_ts: deadlineTs,
         deadline_start_ts: deadlineStartTs,
+        deadline_duration: deadlineDuration,
         updated_at: new Date().toISOString()
       })
     });
@@ -3959,11 +3969,11 @@ async function clearDeadlineData(){
   }catch(e){ console.warn('[마감] DB 초기화 실패:', e.message); }
 }
 
-async function setDeadline(endTs){
+async function setDeadline(endTs, durationMin){
   deadlineTs = endTs;
   deadlineStartTs = Date.now();
+  deadlineDuration = durationMin || Math.round((endTs - Date.now()) / 60000);
   await saveDeadline();
-  startCountdown();
   updateCurrentDeadlineBox();
 }
 
